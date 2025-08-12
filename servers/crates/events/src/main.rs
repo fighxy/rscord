@@ -1,10 +1,11 @@
 use axum::{extract::{ws::{Message, WebSocket, WebSocketUpgrade}, Query}, response::IntoResponse, routing::get, Router};
-use lapin::{options::*, types::FieldTable, Channel as AmqpChannel, Connection, ConnectionProperties};
-use rscord_common::{load_config, verify_jwt, AppConfig};
+use lapin::{options::*, types::FieldTable, Connection, ConnectionProperties};
+use rscord_common::{load_config, AppConfig};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tracing::info;
 use serde::Deserialize;
+use futures_util::StreamExt;
 
 #[tokio::main]
 async fn main() {

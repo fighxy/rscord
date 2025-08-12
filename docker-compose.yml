@@ -31,7 +31,7 @@ services:
       - minio_data:/data
 
   maildev:
-    image: maildev/maildev:2
+    image: maildev/maildev:latest
     ports:
       - "14080:1080"
       - "14025:1025"

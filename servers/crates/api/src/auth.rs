@@ -20,7 +20,7 @@ pub struct Claims { pub sub: String, pub exp: i64 }
 pub async fn login(State(state): State<AppState>, Json(body): Json<LoginRequest>) -> Result<Json<LoginResponse>, &'static str> {
     let users: Collection<UserDoc> = state.users();
     let filter = doc! {"email": &body.email};
-    let Some(user) = users.find_one(filter, None).await.map_err(|_| "db")? else { return Err("invalid_credentials") };
+    let Some(user) = users.find_one(filter).await.map_err(|_| "db")? else { return Err("invalid_credentials") };
 
     let parsed = PasswordHash::new(&user.password_hash).map_err(|_| "pwd")?;
     argon2::Argon2::default().verify_password(body.password.as_bytes(), &parsed).map_err(|_| "invalid_credentials")?;

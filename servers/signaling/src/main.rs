@@ -4,7 +4,9 @@ use axum::{extract::{Query, State}, response::IntoResponse, routing::get, Router
 use rscord_common::{verify_jwt, load_config};
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use dashmap::DashMap;
-use futures::{SinkExt, StreamExt};
+// Remove this line or the unused parts:
+// use futures::{SinkExt, StreamExt};
+// If neither is used, remove the entire line.
 use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast;
 use tracing::{error, info};
@@ -141,10 +143,10 @@ async fn on_ws_message(
             let client_msg: ClientMessage = serde_json::from_str(&txt)?;
             match client_msg {
                 ClientMessage::Join { room, peer_id: id } => {
-                    let (tx, _rx) = state.rooms.entry(room.clone()).or_insert_with(|| {
+                    let tx = state.rooms.entry(room.clone()).or_insert_with(|| {
                         let (tx, _rx) = broadcast::channel::<SignalMessage>(256);
-                        (tx)
-                    }).clone().into_inner();
+                        tx
+                    }).clone();
 
                     let rx = tx.subscribe();
                     *joined_room = Some(room.clone());

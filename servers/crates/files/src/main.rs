@@ -1,11 +1,10 @@
-use axum::{extract::Query, routing::{get, post}, Json, Router};
-use aws_config::BehaviorVersion;
-use aws_sdk_s3::primitives::ByteStream;
-use aws_sdk_s3::Client as S3Client;
+use axum::{extract::Query, routing::get, Json, Router};  // Убрал post, если не нужен
+use aws_sdk_s3::{primitives::ByteStream, Client as S3Client, config::{Credentials, Region}, presigning::PresigningConfig};
 use rscord_common::load_config;
 use std::net::SocketAddr;
 use tracing::info;
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 #[tokio::main]
 async fn main() {
@@ -45,8 +44,7 @@ async fn presign_put(Query(q): Query<PresignQuery>) -> Json<PresignResponse> {
         .put_object()
         .bucket(&bucket)
         .key(&q.key)
-        .body(ByteStream::from_static(b""))
-        .presigned(std::time::Duration::from_secs(expires))
+        .presigned(PresigningConfig::expires_in(Duration::from_secs(expires)).unwrap())
         .await
         .unwrap();
     Json(PresignResponse { url: presigned.uri().to_string() })
@@ -61,16 +59,27 @@ async fn presign_get(Query(q): Query<PresignQuery>) -> Json<PresignResponse> {
         .get_object()
         .bucket(&bucket)
         .key(&q.key)
-        .presigned(std::time::Duration::from_secs(expires))
+        .presigned(PresigningConfig::expires_in(Duration::from_secs(expires)).unwrap())
         .await
         .unwrap();
     Json(PresignResponse { url: presigned.uri().to_string() })
 }
 
 async fn s3_client(cfg: &rscord_common::AppConfig) -> S3Client {
-    let mut loader = aws_config::defaults(BehaviorVersion::latest()).load().await;
-    // Note: for MinIO, you may need to customize endpoint and creds
-    S3Client::new(&loader)
+    let credentials = Credentials::new(
+        cfg.s3_access_key.as_ref().unwrap_or(&"minioadmin".to_string()),
+        cfg.s3_secret_key.as_ref().unwrap_or(&"minioadmin".to_string()),
+        None,
+        None,
+        "",
+    );
+    let s3_config = aws_sdk_s3::config::Builder::new()
+        .endpoint_url(cfg.s3_endpoint.as_ref().unwrap_or(&"http://localhost:9000".to_string()))
+        .credentials_provider(credentials)
+        .region(Region::new("us-east-1"))
+        .force_path_style(true)
+        .build();
+    S3Client::from_conf(s3_config)
 }
 
 

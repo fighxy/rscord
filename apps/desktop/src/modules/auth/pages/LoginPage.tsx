@@ -2,6 +2,7 @@ import { useState } from "react";
 import "../../../styles/theme.css";
 import axios from "axios";
 import { useAuth } from "../store";
+import { Link } from "react-router-dom";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -23,6 +24,10 @@ export default function LoginPage() {
         <input placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <input placeholder="Password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
         <button type="submit">Login</button>
+        <div style={{ textAlign: "center", marginTop: 8 }}>
+          <span style={{ color: "var(--text-500)" }}>Нет аккаунта? </span>
+          <Link to="/register" style={{ color: "var(--primary-500)" }}>Зарегистрироваться</Link>
+        </div>
       </form>
     </div>
   );
