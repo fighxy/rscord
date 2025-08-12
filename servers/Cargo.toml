@@ -1,0 +1,11 @@
+[workspace]
+members = [
+  "signaling",
+  "crates/common",
+  "crates/api",
+  "crates/events",
+  "crates/files",
+]
+resolver = "2"
+
+

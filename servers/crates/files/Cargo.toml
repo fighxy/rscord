@@ -1,0 +1,17 @@
+[package]
+name = "rscord-files"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+rscord-common = { path = "../common" }
+aws-config = { version = "1", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+
