@@ -100,6 +100,7 @@ pub struct Channel {
     pub id: Id,
     pub guild_id: Id,
     pub name: String,
+    pub channel_type: String, // "text" или "voice"
     pub created_at: DateTime<Utc>,
 }
 

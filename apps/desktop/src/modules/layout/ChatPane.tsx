@@ -1,16 +1,71 @@
 import { MessageList } from "../chat/components/MessageList";
 import { MessageComposer } from "../chat/components/MessageComposer";
+import { TypingIndicator } from "../chat/components/TypingIndicator";
+import { VoiceChannelPane } from "../voice/components/VoiceChannelPane";
+import { useQuery } from "@tanstack/react-query";
+import { getChannel } from "../channels/api";
 
-export function ChatPane({ channelId, authorId }: { channelId: string; authorId: string }) {
+interface ChatPaneProps {
+  channelId: string;
+}
+
+export function ChatPane({ channelId }: ChatPaneProps) {
+  const { data: channel } = useQuery({
+    queryKey: ["channel", channelId],
+    queryFn: () => getChannel(channelId),
+    enabled: !!channelId
+  });
+
+  if (!channelId) {
+    return (
+      <div style={{ 
+        display: "grid", 
+        placeItems: "center", 
+        height: "100%", 
+        color: "var(--text-500)",
+        fontSize: "18px"
+      }}>
+        Выберите канал для начала общения
+      </div>
+    );
+  }
+
+  // Определяем тип канала
+  const isVoiceChannel = channel?.channel_type === 'voice';
+
   return (
     <>
-      <div className="chat-header">#{channelId ? channelId.slice(0, 6) : "channel"}</div>
-      <div className="chat-scroll">
-        <MessageList channelId={channelId} />
+      <div className="chat-header">
+        {channel ? (
+          <>
+            {isVoiceChannel ? '🎤' : '#'} {channel.name}
+            {isVoiceChannel && (
+              <span style={{ 
+                fontSize: "12px", 
+                color: "var(--text-500)", 
+                marginLeft: "8px",
+                fontWeight: "normal"
+              }}>
+                Голосовой канал
+              </span>
+            )}
+          </>
+        ) : (
+          `# ${channelId.slice(0, 8)}`
+        )}
       </div>
-      <div className="chat-input">
-        <MessageComposer channelId={channelId} authorId={authorId} />
-      </div>
+      
+      {isVoiceChannel ? (
+        <VoiceChannelPane channelId={channelId} channelName={channel?.name || ''} />
+      ) : (
+        <>
+          <div className="chat-scroll">
+            <MessageList channelId={channelId} />
+            <TypingIndicator channelId={channelId} />
+          </div>
+          <MessageComposer channelId={channelId} />
+        </>
+      )}
     </>
   );
 }

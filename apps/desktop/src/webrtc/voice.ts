@@ -8,6 +8,8 @@ export class VoiceMesh {
   private readonly constraints: MediaStreamConstraints = { audio: true, video: false };
   private localStream?: MediaStream;
   private peers: Map<string, Peer> = new Map();
+  private isMuted: boolean = false;
+  private isDeafened: boolean = false;
 
   constructor() {}
 
@@ -43,6 +45,26 @@ export class VoiceMesh {
 
   getPeer(id: string) {
     return this.peers.get(id);
+  }
+
+  setMuted(muted: boolean) {
+    this.isMuted = muted;
+    if (this.localStream) {
+      this.localStream.getAudioTracks().forEach(track => {
+        track.enabled = !muted;
+      });
+    }
+  }
+
+  setDeafened(deafened: boolean) {
+    this.isDeafened = deafened;
+    this.peers.forEach(peer => {
+      peer.audioEl.muted = deafened;
+    });
+  }
+
+  getMutedState() {
+    return { isMuted: this.isMuted, isDeafened: this.isDeafened };
   }
 
   async makeOffer(remoteId: string, onIceCandidate: (candidate: RTCIceCandidateInit) => void, onTrack?: (audio: HTMLAudioElement) => void) {

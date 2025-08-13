@@ -1,0 +1,38 @@
+### Тестирование API аутентификации
+
+### 1. Регистрация пользователя
+POST http://127.0.0.1:14702/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "display_name": "TestUser",
+  "password": "password123"
+}
+
+### 2. Вход в систему
+POST http://127.0.0.1:14702/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+
+### 3. Получение информации о текущем пользователе
+GET http://127.0.0.1:14702/auth/me
+Authorization: Bearer YOUR_TOKEN_HERE
+
+### 4. Создание сервера (защищенный endpoint)
+POST http://127.0.0.1:14702/guilds
+Authorization: Bearer YOUR_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "name": "Test Guild",
+  "owner_id": "USER_ID_HERE"
+}
+
+### 5. Получение списка серверов (защищенный endpoint)
+GET http://127.0.0.1:14702/guilds
+Authorization: Bearer YOUR_TOKEN_HERE

@@ -11,6 +11,10 @@
   --danger: #ed4245;
   --warning: #f0b232;
   --border: #2f3338;
+  --border-200: #40444b;
+  --primary-500: #5865f2;
+  --error-100: #fde8e8;
+  --error-600: #dc2626;
 }
 
 html, body, #root { height: 100%; }

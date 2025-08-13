@@ -56,13 +56,15 @@ async fn main() {
         .route("/health", get(|| async { "ok" }))
         .route("/auth/register", post(register))
         .route("/auth/login", post(auth::login))
+        .route("/auth/me", get(get_current_user))
         .route("/guilds", get(list_guilds).post(create_guild))
         .route("/guilds/:id", get(get_guild).put(update_guild).delete(delete_guild))
         .route("/guilds/:guild_id/channels", get(list_channels).post(create_channel))
         .route("/channels/:id", get(get_channel).put(update_channel).delete(delete_channel))
         .route("/channels/:id/messages", get(list_messages).post(create_message))
         .with_state(state)
-        .layer(cors);
+        .layer(cors)
+        .layer(from_fn(auth_middleware));
 
     info!("rscord-api listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
@@ -140,6 +142,7 @@ struct ChannelDoc {
     #[serde(rename = "_id")] id: String,
     guild_id: String,
     name: String,
+    channel_type: String, // "text" или "voice"
     created_at: chrono::DateTime<chrono::Utc>,
 }
 
@@ -199,13 +202,30 @@ async fn delete_guild(State(state): State<AppState>, Path(id): Path<String>) -> 
 }
 
 #[derive(Deserialize)]
-struct CreateChannelRequest { guild_id: String, name: String }
+struct CreateChannelRequest { 
+    guild_id: String, 
+    name: String,
+    channel_type: Option<String> // По умолчанию "text"
+}
 #[derive(Serialize)]
 struct ChannelResponse { channel: ChannelModel }
 
 async fn create_channel(State(state): State<AppState>, Json(body): Json<CreateChannelRequest>) -> Json<ChannelResponse> {
-    let channel = ChannelModel { id: Id(Ulid::new()), guild_id: Id(Ulid::from_string(&body.guild_id).unwrap_or_else(|_| Ulid::new())), name: body.name, created_at: Utc::now() };
-    let doc = ChannelDoc { id: channel.id.0.to_string(), guild_id: channel.guild_id.0.to_string(), name: channel.name.clone(), created_at: channel.created_at };
+    let channel_type = body.channel_type.unwrap_or_else(|| "text".to_string());
+    let channel = ChannelModel { 
+        id: Id(Ulid::new()), 
+        guild_id: Id(Ulid::from_string(&body.guild_id).unwrap_or_else(|_| Ulid::new())), 
+        name: body.name, 
+        channel_type: channel_type.clone(),
+        created_at: Utc::now() 
+    };
+    let doc = ChannelDoc { 
+        id: channel.id.0.to_string(), 
+        guild_id: channel.guild_id.0.to_string(), 
+        name: channel.name.clone(), 
+        channel_type,
+        created_at: channel.created_at 
+    };
     let _ = state.channels().insert_one(doc).await;
     // let _ = state.bus.publish(&format!("channel.{}.created", channel.id.0), &channel).await;
     Json(ChannelResponse { channel })
@@ -293,13 +313,30 @@ async fn list_messages(State(state): State<AppState>, Path(channel_id): Path<Str
     Json(res)
 }
 
-async fn register(State(state): State<AppState>, Json(body): Json<RegisterRequest>) -> Json<RegisterResponse> {
+async fn register(State(state): State<AppState>, Json(body): Json<RegisterRequest>) -> Result<Json<RegisterResponse>, axum::http::StatusCode> {
+    // Валидация данных
+    if body.email.is_empty() || body.display_name.is_empty() || body.password.is_empty() {
+        return Err(axum::http::StatusCode::BAD_REQUEST);
+    }
+    
+    if body.password.len() < 6 {
+        return Err(axum::http::StatusCode::BAD_REQUEST);
+    }
+    
+    // Проверяем, не существует ли уже пользователь с таким email
+    let users: Collection<UserDoc> = state.users();
+    let filter = doc! {"email": &body.email};
+    if let Ok(Some(_)) = users.find_one(filter).await {
+        return Err(axum::http::StatusCode::CONFLICT);
+    }
+    
     let user = User {
         id: Id(Ulid::new()),
         email: body.email,
         display_name: body.display_name,
         created_at: Utc::now(),
     };
+    
     // hash password
     let salt = argon2::password_hash::SaltString::generate(&mut rand_core::OsRng);
     let password_hash = <argon2::Argon2 as PasswordHasher>::hash_password(
@@ -307,7 +344,7 @@ async fn register(State(state): State<AppState>, Json(body): Json<RegisterReques
         body.password.as_bytes(),
         &salt
     )
-    .unwrap()
+    .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?
     .to_string();
 
     // persist to MongoDB
@@ -318,9 +355,46 @@ async fn register(State(state): State<AppState>, Json(body): Json<RegisterReques
         password_hash,
         created_at: user.created_at,
     };
-    let _ = state.users().insert_one(doc).await;
+    
+    if let Err(_) = state.users().insert_one(doc).await {
+        return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
+    }
 
-    Json(RegisterResponse { user })
+    Ok(Json(RegisterResponse { user }))
+}
+
+#[axum::debug_handler]
+async fn get_current_user(State(state): State<AppState>, req: Request<axum::body::Body>) -> Result<Json<User>, axum::http::StatusCode> {
+    // Получаем токен из заголовка Authorization
+    let Some(auth_header) = req.headers().get(header::AUTHORIZATION) else { 
+        return Err(axum::http::StatusCode::UNAUTHORIZED) 
+    };
+    
+    let s = auth_header.to_str().unwrap_or("");
+    let token = s.strip_prefix("Bearer ").unwrap_or("");
+    if token.is_empty() { 
+        return Err(axum::http::StatusCode::UNAUTHORIZED) 
+    }
+    
+    // Верифицируем JWT токен
+    let secret = &state.jwt_secret;
+    let claims = verify_jwt(token, secret).map_err(|_| axum::http::StatusCode::UNAUTHORIZED)?;
+    
+    // Получаем пользователя из базы данных
+    let users: Collection<UserDoc> = state.users();
+    let filter = doc! {"_id": &claims.sub};
+    let Some(user_doc) = users.find_one(filter).await.map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)? else { 
+        return Err(axum::http::StatusCode::NOT_FOUND) 
+    };
+    
+    let user = User {
+        id: Id(Ulid::from_string(&user_doc.id).map_err(|_| axum::http::StatusCode::BAD_REQUEST)?),
+        email: user_doc.email,
+        display_name: user_doc.display_name,
+        created_at: user_doc.created_at,
+    };
+    
+    Ok(Json(user))
 }
 
 
