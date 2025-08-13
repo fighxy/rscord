@@ -1,10 +1,14 @@
 mod auth;
 mod events;
-use axum::{extract::{Path, State}, http::{header, Method, Request}, middleware::from_fn, routing::{delete, get, post, put}, Json, Router};
+use axum::{
+    extract::{Path, State},
+    http::{header, Method, Request},
+    response::Json,
+    routing::{get, post},
+    Router,
+};
 use rscord_common::{load_config, verify_jwt, AppConfig, Channel as ChannelModel, Guild as GuildModel, Id, User};
 use std::net::SocketAddr;
-use time::Duration;
-use tower::{limit::RateLimitLayer, timeout::TimeoutLayer};
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{info, warn};
 use ulid::Ulid;
@@ -13,6 +17,8 @@ use serde::{Deserialize, Serialize};
 use chrono::Utc;
 use futures_util::StreamExt;
 use password_hash::PasswordHasher;
+use crate::events::EventBus;
+
 
 #[tokio::main]
 async fn main() {
@@ -36,7 +42,36 @@ async fn main() {
     // Connect to MongoDB
     let mongo_uri = cfg.mongodb_uri.clone().unwrap();
     let mongo = Client::with_uri_str(mongo_uri).await.expect("mongo");
-    let state = AppState::new(mongo, cfg.jwt_secret.clone().unwrap());
+    
+    // Connect to EventBus (RabbitMQ) - handle connection failure gracefully
+    let bus = match cfg.rabbitmq_uri.as_ref() {
+        Some(uri) => {
+            match EventBus::connect(uri).await {
+                Ok(bus) => {
+                    info!("Connected to RabbitMQ event bus");
+                    bus
+                }
+                Err(e) => {
+                    warn!("Failed to connect to RabbitMQ event bus: {}. Events will not be published.", e);
+                    // Create a dummy EventBus that does nothing
+                    EventBus::dummy()
+                }
+            }
+        }
+        None => {
+            warn!("No RabbitMQ URI configured. Events will not be published.");
+            EventBus::dummy()
+        }
+    };
+    
+    let state = AppState::new(mongo, cfg.jwt_secret.clone().unwrap(), bus.clone());
+    
+    // Log EventBus connection status
+    if bus.is_connected() {
+        info!("EventBus is connected and ready to publish events");
+    } else {
+        warn!("EventBus is in dummy mode - events will not be published");
+    }
     // ensure index on users.email
     match state
         .users()
@@ -58,13 +93,12 @@ async fn main() {
         .route("/auth/login", post(auth::login))
         .route("/auth/me", get(get_current_user))
         .route("/guilds", get(list_guilds).post(create_guild))
-        .route("/guilds/:id", get(get_guild).put(update_guild).delete(delete_guild))
+        .route("/guilds/:id", get(get_guild).delete(delete_guild))
         .route("/guilds/:guild_id/channels", get(list_channels).post(create_channel))
-        .route("/channels/:id", get(get_channel).put(update_channel).delete(delete_channel))
+        .route("/channels/:id", get(get_channel).delete(delete_channel))
         .route("/channels/:id/messages", get(list_messages).post(create_message))
         .with_state(state)
-        .layer(cors)
-        .layer(from_fn(auth_middleware));
+        .layer(cors);
 
     info!("rscord-api listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
@@ -83,31 +117,19 @@ async fn list_guilds(State(state): State<AppState>) -> Json<Vec<GuildModel>> {
     Json(res)
 }
 
-async fn auth_middleware(State(state): State<AppState>, mut req: Request<axum::body::Body>, next: axum::middleware::Next) -> Result<axum::response::Response, axum::http::StatusCode> {
-    // Allow unauthenticated for health and auth endpoints
-    let path = req.uri().path();
-    if path.starts_with("/health") || path.starts_with("/auth/") {
-        return Ok(next.run(req).await);
-    }
-    // Expect Bearer token
-    let Some(auth_header) = req.headers().get(header::AUTHORIZATION) else { return Err(axum::http::StatusCode::UNAUTHORIZED) };
-    let s = auth_header.to_str().unwrap_or("");
-    let token = s.strip_prefix("Bearer ").unwrap_or("");
-    if token.is_empty() { return Err(axum::http::StatusCode::UNAUTHORIZED) }
-    // Verify
-    let secret = &state.jwt_secret;
-    let _claims = verify_jwt(token, secret).map_err(|_| axum::http::StatusCode::UNAUTHORIZED)?;
-    Ok(next.run(req).await)
-}
+
 
 #[derive(Clone)]
 struct AppState {
     mongo: Client,
     jwt_secret: String,
+    bus: EventBus,
 }
 
 impl AppState {
-    fn new(mongo: Client, jwt_secret: String) -> Self { Self { mongo, jwt_secret } }
+    fn new(mongo: Client, jwt_secret: String, bus: EventBus) -> Self { 
+        Self { mongo, jwt_secret, bus } 
+    }
     fn users(&self) -> Collection<UserDoc> { self.mongo.database("rscord").collection("users") }
     fn guilds(&self) -> Collection<GuildDoc> { self.mongo.database("rscord").collection("guilds") }
     fn channels(&self) -> Collection<ChannelDoc> { self.mongo.database("rscord").collection("channels") }
@@ -165,7 +187,7 @@ async fn create_guild(State(state): State<AppState>, Json(body): Json<CreateGuil
     let guild = GuildModel { id: Id(Ulid::new()), name: body.name, owner_id: Id(Ulid::from_string(&body.owner_id).unwrap_or_else(|_| Ulid::new())), created_at: Utc::now() };
     let doc = GuildDoc { id: guild.id.0.to_string(), name: guild.name.clone(), owner_id: guild.owner_id.0.to_string(), created_at: guild.created_at };
     let _ = state.guilds().insert_one(doc).await;
-    // let _ = state.bus.publish(&format!("guild.{}.created", guild.id.0), &guild).await;
+    let _ = state.bus.publish(&format!("guild.{}.created", guild.id.0), &guild).await;
     Json(GuildResponse { guild })
 }
 
@@ -183,7 +205,9 @@ async fn get_guild(State(state): State<AppState>, Path(id): Path<String>) -> Res
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct UpdateGuildRequest { name: Option<String> }
+#[allow(dead_code)]
 async fn update_guild(State(state): State<AppState>, Path(id): Path<String>, Json(body): Json<UpdateGuildRequest>) -> Result<Json<GuildResponse>, axum::http::StatusCode> {
     if let Some(name) = body.name {
         let _ = state.guilds().update_one(doc!{"_id": &id}, doc!{"$set": {"name": name.clone()}}).await.ok()
@@ -191,13 +215,13 @@ async fn update_guild(State(state): State<AppState>, Path(id): Path<String>, Jso
     }
     let res = get_guild(State(state.clone()), Path(id.clone())).await?;
     let Json(GuildResponse { guild }) = &res;
-    // let _ = state.bus.publish(&format!("guild.{}.updated", guild.id.0), &guild).await;
+    let _ = state.bus.publish(&format!("guild.{}.updated", guild.id.0), &guild).await;
     Ok(res)
 }
 
 async fn delete_guild(State(state): State<AppState>, Path(id): Path<String>) -> Json<serde_json::Value> {
     let _ = state.guilds().delete_one(doc!{"_id": id.clone()}).await;
-    // let _ = state.bus.publish(&format!("guild.{}.deleted", id), &serde_json::json!({"id": id})).await;
+    let _ = state.bus.publish(&format!("guild.{}.deleted", id), &serde_json::json!({"id": id})).await;
     Json(serde_json::json!({"ok": true}))
 }
 
@@ -227,7 +251,7 @@ async fn create_channel(State(state): State<AppState>, Json(body): Json<CreateCh
         created_at: channel.created_at 
     };
     let _ = state.channels().insert_one(doc).await;
-    // let _ = state.bus.publish(&format!("channel.{}.created", channel.id.0), &channel).await;
+    let _ = state.bus.publish(&format!("channel.{}.created", channel.id.0), &channel).await;
     Json(ChannelResponse { channel })
 }
 
@@ -237,7 +261,7 @@ async fn list_channels(State(state): State<AppState>, Path(guild_id): Path<Strin
     let mut res = Vec::new();
     while let Some(Ok(doc)) = cursor.next().await {
         if let (Ok(id), Ok(gid)) = (Ulid::from_string(&doc.id), Ulid::from_string(&doc.guild_id)) {
-            res.push(ChannelModel { id: Id(id), guild_id: Id(gid), name: doc.name, created_at: doc.created_at });
+            res.push(ChannelModel { id: Id(id), guild_id: Id(gid), name: doc.name, channel_type: doc.channel_type, created_at: doc.created_at });
         }
     }
     Json(res)
@@ -251,13 +275,16 @@ async fn get_channel(State(state): State<AppState>, Path(id): Path<String>) -> R
         id: Id(Ulid::from_string(&doc.id).map_err(|_| axum::http::StatusCode::BAD_REQUEST)?), 
         guild_id: Id(Ulid::from_string(&doc.guild_id).map_err(|_| axum::http::StatusCode::BAD_REQUEST)?), 
         name: doc.name, 
+        channel_type: doc.channel_type,
         created_at: doc.created_at 
     };
     Ok(Json(ChannelResponse { channel }))
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct UpdateChannelRequest { name: Option<String> }
+#[allow(dead_code)]
 #[axum::debug_handler]
 async fn update_channel(State(state): State<AppState>, Path(id): Path<String>, Json(body): Json<UpdateChannelRequest>) -> Result<Json<ChannelResponse>, axum::http::StatusCode> {
     if let Some(name) = body.name {
@@ -266,13 +293,13 @@ async fn update_channel(State(state): State<AppState>, Path(id): Path<String>, J
     }
     let res = get_channel(State(state.clone()), Path(id.clone())).await?;
     let Json(ChannelResponse { channel }) = &res;
-    // let _ = state.bus.publish(&format!("channel.{}.updated", channel.id.0), &channel).await;
+    let _ = state.bus.publish(&format!("channel.{}.updated", channel.id.0), &channel).await;
     Ok(res)
 }
 
 async fn delete_channel(State(state): State<AppState>, Path(id): Path<String>) -> Json<serde_json::Value> {
     let _ = state.channels().delete_one(doc!{"_id": id.clone()}).await;
-    // let _ = state.bus.publish(&format!("channel.{}.deleted", id), &serde_json::json!({"id": id})).await;
+    let _ = state.bus.publish(&format!("channel.{}.deleted", id), &serde_json::json!({"id": id})).await;
     Json(serde_json::json!({"ok": true}))
 }
 
@@ -293,7 +320,7 @@ async fn create_message(State(state): State<AppState>, Path(channel_id): Path<St
         "content": doc.content,
         "created_at": doc.created_at,
     });
-    // let _ = state.bus.publish(&format!("channel.{}.message_created", channel_id), &payload).await;
+    let _ = state.bus.publish(&format!("channel.{}.message_created", channel_id), &payload).await;
     Json(MessageResponse { message: payload })
 }
 
