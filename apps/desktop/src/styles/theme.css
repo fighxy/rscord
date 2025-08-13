@@ -32,6 +32,14 @@ body { margin: 0; background: var(--bg-900); color: var(--text-100); font-family
   -ms-overflow-style: none; /* IE and Edge */
 }
 
+/* Отключаем браузерное контекстное меню */
+* {
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* IE10+ */
+  user-select: none; /* Standard */
+}
+
 *::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
 }
@@ -45,7 +53,19 @@ body { margin: 0; background: var(--bg-900); color: var(--text-100); font-family
 .chat-header { display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid var(--border); background: var(--bg-800); }
 .chat-scroll { overflow: auto; padding: 12px 16px; }
 .chat-input { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg-800); }
-.input, input, textarea { background: var(--bg-700); border: 1px solid var(--border); color: var(--text-100); border-radius: 8px; padding: 10px 12px; outline: none; }
+.input, input, textarea { 
+  background: var(--bg-700); 
+  border: 1px solid var(--border); 
+  color: var(--text-100); 
+  border-radius: 8px; 
+  padding: 10px 12px; 
+  outline: none;
+  /* Разрешаем выделение текста в полях ввода */
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
 .button, button { background: var(--brand); border: none; color: white; border-radius: 8px; padding: 10px 14px; font-weight: 600; cursor: pointer; }
 .button:disabled, button:disabled { opacity: .6; cursor: default; }
 

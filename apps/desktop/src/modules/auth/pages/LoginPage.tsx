@@ -63,7 +63,7 @@ export default function LoginPage() {
   return (
     <div style={{ display: "grid", placeItems: "center", height: "100vh" }}>
       <form onSubmit={submit} style={{ display: "grid", gap: 8, width: 360 }}>
-        <h1 className="brand-title">PIDORD</h1>
+        <h1 className="brand-title">RSCORD</h1>
         <h3 style={{ margin: 0, color: "var(--text-500)" }}>Войти в аккаунт</h3>
         
         <AuthError error={error} />
