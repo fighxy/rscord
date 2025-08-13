@@ -92,6 +92,13 @@
   padding: 8px;
   background-color: var(--bg-600);
   border-radius: 4px;
+  /* Скрываем скролл-бар */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.permissions-grid::-webkit-scrollbar {
+  display: none;
 }
 
 .permission-item {

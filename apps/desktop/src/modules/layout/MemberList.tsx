@@ -101,8 +101,9 @@ export function MemberList({ guildId }: MemberListProps) {
           <button
             className="manage-roles-btn"
             onClick={() => setShowRoleAssignment(!showRoleAssignment)}
+            title="Нажмите на 'Назначить роль' для управления ролями участников"
           >
-            {showRoleAssignment ? 'Скрыть' : 'Управление ролями'}
+            Управление ролями
           </button>
         )}
       </div>

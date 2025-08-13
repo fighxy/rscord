@@ -7,14 +7,17 @@ import { getChannel } from "../channels/api";
 
 interface ChatPaneProps {
   channelId: string;
+  autoJoinVoice?: boolean;
 }
 
-export function ChatPane({ channelId }: ChatPaneProps) {
+export function ChatPane({ channelId, autoJoinVoice }: ChatPaneProps) {
   const { data: channel } = useQuery({
     queryKey: ["channel", channelId],
     queryFn: () => getChannel(channelId),
     enabled: !!channelId
   });
+
+  console.log('ChatPane render:', { channelId, autoJoinVoice, channelType: channel?.channel_type });
 
   if (!channelId) {
     return (
@@ -56,7 +59,11 @@ export function ChatPane({ channelId }: ChatPaneProps) {
       </div>
       
       {isVoiceChannel ? (
-        <VoiceChannelPane channelId={channelId} channelName={channel?.name || ''} />
+        <VoiceChannelPane 
+          channelId={channelId} 
+          channelName={channel?.name || ''} 
+          autoJoin={autoJoinVoice}
+        />
       ) : (
         <>
           <div className="chat-scroll">

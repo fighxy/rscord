@@ -1,4 +1,4 @@
-import { http } from "../../shared/api/http";
+import httpClient from "../../shared/api/http";
 
 export type Channel = { 
   id: string; 
@@ -14,12 +14,12 @@ export interface CreateChannelRequest {
 }
 
 export async function listChannels(guild_id: string) {
-  const res = await http.get<Channel[]>(`/guilds/${guild_id}/channels`);
+  const res = await httpClient.get<Channel[]>(`/guilds/${guild_id}/channels`);
   return res.data;
 }
 
 export async function createChannel(guild_id: string, name: string, channelType: 'text' | 'voice' = 'text') {
-  const res = await http.post<Channel>('/guilds/' + guild_id + '/channels', {
+  const res = await httpClient.post<Channel>('/guilds/' + guild_id + '/channels', {
     guild_id,
     name,
     channel_type: channelType
@@ -28,7 +28,7 @@ export async function createChannel(guild_id: string, name: string, channelType:
 }
 
 export async function getChannel(channel_id: string) {
-  const res = await http.get<Channel>(`/channels/${channel_id}`);
+  const res = await httpClient.get<Channel>(`/channels/${channel_id}`);
   return res.data;
 }
 

@@ -26,6 +26,16 @@ body { margin: 0; background: var(--bg-900); color: var(--text-100); font-family
 .guild-pill:hover { transform: scale(1.05); }
 .sidebar { background: var(--bg-800); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
 .sidebar-header { padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; }
+/* Скрываем скролл-бары для всех элементов */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
 .sidebar-list { flex: 1; overflow: auto; padding: 8px; }
 .sidebar-item { padding: 8px 10px; border-radius: 6px; color: var(--text-300); cursor: pointer; }
 .sidebar-item:hover { background: var(--bg-700); color: var(--text-100); }

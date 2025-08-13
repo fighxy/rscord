@@ -6,13 +6,14 @@ import { useAuth } from "../../auth/store";
 interface VoiceChannelPaneProps {
   channelId: string;
   channelName: string;
+  autoJoin?: boolean;
 }
 
 function randomId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-export function VoiceChannelPane({ channelId, channelName }: VoiceChannelPaneProps) {
+export function VoiceChannelPane({ channelId, channelName, autoJoin }: VoiceChannelPaneProps) {
   const { user } = useAuth();
   const [joined, setJoined] = useState(false);
   const [peers, setPeers] = useState<string[]>([]);
@@ -69,7 +70,16 @@ export function VoiceChannelPane({ channelId, channelName }: VoiceChannelPanePro
     return () => {
       voice.leave();
     };
-  }, [channelId, user?.id, signaling, voice]);
+  }, [user?.id, channelId, signaling, voice]);
+
+  // Автоматическое подключение при двойном клике
+  useEffect(() => {
+    console.log('VoiceChannelPane autoJoin effect:', { autoJoin, joined, userId: user?.id });
+    if (autoJoin && !joined && user?.id) {
+      console.log('Auto-joining voice channel:', channelId);
+      join();
+    }
+  }, [autoJoin, joined, user?.id]);
 
   const join = () => {
     if (!user?.id) return;

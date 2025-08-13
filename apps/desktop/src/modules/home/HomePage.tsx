@@ -13,6 +13,7 @@ export default function HomePage() {
   const { user } = useAuth();
   const [selectedGuild, setSelectedGuild] = useState<string>("");
   const [selectedChannel, setSelectedChannel] = useState<string>("");
+  const [joinedVoiceChannel, setJoinedVoiceChannel] = useState<string>("");
 
   const { data: guilds } = useQuery({ 
     queryKey: ["guilds"], 
@@ -30,10 +31,18 @@ export default function HomePage() {
   const handleGuildSelect = (guildId: string) => {
     setSelectedGuild(guildId);
     setSelectedChannel(""); // Сбрасываем выбранный канал при смене сервера
+    setJoinedVoiceChannel(""); // Сбрасываем голосовой канал при смене сервера
   };
 
   const handleChannelSelect = (channelId: string) => {
     setSelectedChannel(channelId);
+    setJoinedVoiceChannel(""); // Сбрасываем автоподключение при обычном выборе канала
+  };
+
+  const handleVoiceChannelJoin = (channelId: string) => {
+    console.log('Voice channel join requested:', channelId);
+    setSelectedChannel(channelId);
+    setJoinedVoiceChannel(channelId);
   };
 
   if (!user) {
@@ -68,6 +77,7 @@ export default function HomePage() {
                   guildId={selectedGuild}
                   selectedChannelId={selectedChannel}
                   onChannelSelect={handleChannelSelect}
+                  onVoiceChannelJoin={handleVoiceChannelJoin}
                 />
               </div>
             )}
@@ -75,10 +85,13 @@ export default function HomePage() {
         </>
       }
       chat={
-        <ChatPane channelId={selectedChannel} />
+        <ChatPane 
+          channelId={selectedChannel} 
+          autoJoinVoice={joinedVoiceChannel === selectedChannel}
+        />
       }
       members={
-        <MemberList />
+        <MemberList guildId={selectedGuild} />
       }
     />
   );

@@ -67,6 +67,28 @@ export function SearchBar() {
     setQuery("");
   };
 
+  // Функции для преобразования типов результатов поиска
+  const messageToSearchResult = (msg: any): SearchResult => ({
+    id: msg.id,
+    type: 'message',
+    title: msg.author_name,
+    content: msg.content,
+    channel_name: msg.channel_name,
+    guild_name: msg.guild_name,
+    timestamp: msg.timestamp,
+    author_name: msg.author_name
+  });
+
+  const channelToSearchResult = (channel: any): SearchResult => ({
+    id: channel.id,
+    type: 'channel',
+    title: channel.name,
+    content: `Канал ${channel.type}`,
+    channel_name: channel.name,
+    guild_name: channel.guild_name,
+    timestamp: new Date().toISOString()
+  });
+
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -242,7 +264,7 @@ export function SearchBar() {
                   {messageResults.map((result) => (
                     <div
                       key={`msg-${result.id}`}
-                      onClick={() => handleResultClick(result)}
+                      onClick={() => handleResultClick(messageToSearchResult(result))}
                       style={{
                         padding: '12px 16px',
                         borderBottom: '1px solid var(--border-200)',
@@ -327,7 +349,7 @@ export function SearchBar() {
                   {channelResults.map((result) => (
                     <div
                       key={`chan-${result.id}`}
-                      onClick={() => handleResultClick(result)}
+                      onClick={() => handleResultClick(channelToSearchResult(result))}
                       style={{
                         padding: '12px 16px',
                         borderBottom: '1px solid var(--border-200)',

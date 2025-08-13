@@ -47,21 +47,38 @@ export function GuildBar() {
                <ConnectionStatus />
              </div>
              
-             <button
-               onClick={handleLogout}
-               style={{
-                 background: "none",
-                 border: "none",
-                 color: "var(--text-400)",
-                 cursor: "pointer",
-                 padding: "4px 8px",
-                 borderRadius: "4px",
-                 fontSize: "12px"
-               }}
-               title="Выйти"
-             >
-               🚪
-             </button>
+                         <button
+              onClick={handleLogout}
+              style={{
+                background: "none",
+                border: "0.5px solid var(--border-200)",
+                color: "var(--text-400)",
+                cursor: "pointer",
+                padding: "8px 12px",
+                borderRadius: "0px",
+                fontSize: "12px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "4px",
+                transition: "all 0.2s ease",
+                minWidth: "60px"
+              }}
+              title="Выйти из аккаунта"
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "var(--bg-600)";
+                e.currentTarget.style.borderColor = "var(--border-300)";
+                e.currentTarget.style.color = "var(--text-300)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+                e.currentTarget.style.borderColor = "var(--border-200)";
+                e.currentTarget.style.color = "var(--text-400)";
+              }}
+            >
+              <span style={{ fontSize: "16px" }}>🚪</span>
+              <span style={{ fontSize: "10px", lineHeight: "1" }}>Выйти</span>
+            </button>
       </div>
     </>
   );

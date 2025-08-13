@@ -8,9 +8,10 @@ interface ChannelSidebarProps {
   guildId: string;
   selectedChannelId?: string;
   onChannelSelect?: (channelId: string) => void;
+  onVoiceChannelJoin?: (channelId: string) => void;
 }
 
-export function ChannelSidebar({ guildId, selectedChannelId, onChannelSelect }: ChannelSidebarProps) {
+export function ChannelSidebar({ guildId, selectedChannelId, onChannelSelect, onVoiceChannelJoin }: ChannelSidebarProps) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
@@ -166,6 +167,7 @@ export function ChannelSidebar({ guildId, selectedChannelId, onChannelSelect }: 
           guildId={guildId} 
           selectedChannelId={selectedChannelId}
           onChannelSelect={onChannelSelect}
+          onVoiceChannelJoin={onVoiceChannelJoin}
         />
       </div>
     </>

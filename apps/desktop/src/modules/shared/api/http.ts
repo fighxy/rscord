@@ -1,7 +1,5 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { useAuth } from '../../auth/store';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 
-// Создаем базовый экземпляр axios
 const httpClient: AxiosInstance = axios.create({
   baseURL: 'http://127.0.0.1:14702',
   timeout: 10000,
@@ -10,7 +8,6 @@ const httpClient: AxiosInstance = axios.create({
   },
 });
 
-// Перехватчик для добавления токена к каждому запросу
 httpClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('auth_token');
@@ -24,12 +21,10 @@ httpClient.interceptors.request.use(
   }
 );
 
-// Перехватчик для обработки ошибок
 httpClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Токен истек или недействителен
       localStorage.removeItem('auth_token');
       window.location.href = '/login';
     }

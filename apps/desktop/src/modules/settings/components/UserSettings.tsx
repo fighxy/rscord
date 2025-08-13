@@ -51,7 +51,11 @@ export function UserSettings() {
         email: form.email
       });
 
-      setUser(updatedUser);
+      setUser({
+        id: updatedUser.id,
+        email: updatedUser.email,
+        displayName: updatedUser.display_name
+      });
       setMessage({ type: 'success', text: 'Профиль успешно обновлен!' });
       
       // Очищаем пароли
