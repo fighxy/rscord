@@ -5,54 +5,17 @@ export function ConnectionStatus() {
 
   if (isConnected) {
     return (
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "6px",
-        fontSize: "12px",
-        color: "var(--success)"
-      }}>
-        <div style={{
-          width: "6px",
-          height: "6px",
-          backgroundColor: "var(--success)",
-          borderRadius: "50%",
-          animation: "pulse 2s infinite"
-        }} />
+      <div className="flex items-center gap-1.5 text-xs text-green-400">
+        <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
         Подключено
       </div>
     );
   }
 
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "6px",
-      fontSize: "12px",
-      color: "var(--danger)"
-    }}>
-      <div style={{
-        width: "6px",
-        height: "6px",
-        backgroundColor: "var(--danger)",
-        borderRadius: "50%"
-      }} />
+    <div className="flex items-center gap-1.5 text-xs text-red-400">
+      <div className="w-1.5 h-1.5 bg-red-400 rounded-full" />
       Отключено
     </div>
   );
 }
-
-// Добавляем CSS анимацию
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.5;
-    }
-  }
-`;
-document.head.appendChild(style);

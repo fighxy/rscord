@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { listMessages } from "../api";
 import { useAuth } from "../../auth/store";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface MessageListProps {
   channelId: string;
@@ -15,13 +16,7 @@ export function MessageList({ channelId }: MessageListProps) {
 
   if (!channelId) {
     return (
-      <div style={{ 
-        display: "grid", 
-        placeItems: "center", 
-        height: "100%", 
-        color: "var(--text-500)",
-        fontSize: "16px"
-      }}>
+      <div className="grid place-items-center h-full text-gray-400 text-base">
         Выберите канал для начала общения
       </div>
     );
@@ -29,51 +24,30 @@ export function MessageList({ channelId }: MessageListProps) {
 
   if (!messages || messages.length === 0) {
     return (
-      <div style={{ 
-        display: "grid", 
-        placeItems: "center", 
-        height: "100%", 
-        color: "var(--text-500)",
-        fontSize: "16px"
-      }}>
+      <div className="grid place-items-center h-full text-gray-400 text-base">
         Нет сообщений в этом канале
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
+    <div className="p-4 flex flex-col gap-4">
       {messages.map((message) => (
-        <div key={message.id} style={{ display: "flex", gap: "12px" }}>
+        <div key={message.id} className="flex gap-3">
           {/* Аватар пользователя */}
-          <div style={{
-            width: "40px",
-            height: "40px",
-            borderRadius: "50%",
-            backgroundColor: "var(--brand)",
-            display: "grid",
-            placeItems: "center",
-            color: "white",
-            fontSize: "16px",
-            fontWeight: "bold"
-          }}>
-            {message.author_id.slice(0, 2).toUpperCase()}
-          </div>
+          <Avatar className="w-10 h-10">
+            <AvatarFallback className="bg-discord-blurple text-white text-base font-bold">
+              {message.author_id.slice(0, 2).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
           
           {/* Содержимое сообщения */}
-          <div style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-              <span style={{ 
-                fontWeight: "600", 
-                color: "var(--text-100)",
-                fontSize: "14px"
-              }}>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-semibold text-gray-200 text-sm">
                 {message.author_id.slice(0, 8)}
               </span>
-              <span style={{ 
-                color: "var(--text-500)", 
-                fontSize: "12px"
-              }}>
+              <span className="text-gray-400 text-xs">
                 {new Date(message.created_at).toLocaleString('ru-RU', {
                   day: '2-digit',
                   month: '2-digit',
@@ -82,11 +56,7 @@ export function MessageList({ channelId }: MessageListProps) {
                 })}
               </span>
             </div>
-            <div style={{ 
-              color: "var(--text-300)", 
-              fontSize: "14px",
-              lineHeight: "1.4"
-            }}>
+            <div className="text-gray-300 text-sm leading-relaxed">
               {message.content}
             </div>
           </div>

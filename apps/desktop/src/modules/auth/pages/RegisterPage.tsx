@@ -4,6 +4,8 @@ import { useAuth } from "../store";
 import { authAPI } from "../api";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthError } from "../components/AuthError";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -79,50 +81,54 @@ export default function RegisterPage() {
   }
 
   return (
-    <div style={{ display: "grid", placeItems: "center", height: "100vh" }}>
-      <form onSubmit={submit} style={{ display: "grid", gap: 8, width: 360 }}>
-        <h1 className="brand-title">RSCORD</h1>
-        <h3 style={{ margin: 0, color: "var(--text-500)" }}>Создать аккаунт</h3>
+    <div className="grid place-items-center h-screen bg-discord-darker">
+      <form onSubmit={submit} className="grid gap-4 w-90 max-w-md p-8 bg-discord-dark rounded-lg border border-gray-700">
+        <h1 className="text-3xl font-bold text-center text-white">RSCORD</h1>
+        <h3 className="text-center text-gray-400 m-0">Создать аккаунт</h3>
         
         <AuthError error={error} />
         
-        <input 
+        <Input 
           placeholder="Email" 
           type="email"
           value={email} 
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}
+          className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
         />
-        <input 
+        <Input 
           placeholder="Имя пользователя" 
           value={displayName} 
           onChange={(e) => setDisplayName(e.target.value)}
           disabled={isLoading}
+          className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
         />
-        <input 
+        <Input 
           placeholder="Пароль" 
           type="password" 
           value={password} 
           onChange={(e) => setPassword(e.target.value)}
           disabled={isLoading}
+          className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
         />
-        <input 
+        <Input 
           placeholder="Подтвердите пароль" 
           type="password" 
           value={confirmPassword} 
           onChange={(e) => setConfirmPassword(e.target.value)}
           disabled={isLoading}
+          className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
         />
-        <button 
+        <Button 
           type="submit" 
           disabled={isLoading}
-          style={{ opacity: isLoading ? 0.7 : 1 }}
+          className="bg-discord-blurple hover:bg-blue-600 disabled:opacity-70"
         >
           {isLoading ? "Регистрация..." : "Зарегистрироваться"}
-        </button>
-        <div style={{ textAlign: "center", marginTop: 8 }}>
-          <span style={{ color: "var(--text-500)" }}>Уже есть аккаунт? </span>
-          <Link to="/login" style={{ color: "var(--primary-500)" }}>Войти</Link>
+        </Button>
+        <div className="text-center mt-2">
+          <span className="text-gray-400">Уже есть аккаунт? </span>
+          <Link to="/login" className="text-discord-blurple hover:text-blue-400">Войти</Link>
         </div>
       </form>
     </div>

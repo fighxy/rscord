@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createGuild, listGuilds } from "../api";
 import { useState } from "react";
 import { useAuth } from "../../auth/store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface GuildListProps {
   selectedGuildId?: string;
@@ -39,75 +41,48 @@ export function GuildList({ selectedGuildId, onGuildSelect }: GuildListProps) {
 
   if (!guilds || guilds.length === 0) {
     return (
-      <div>
-        <div style={{ 
-          padding: "8px", 
-          color: "var(--text-500)", 
-          fontSize: "14px",
-          marginBottom: "12px"
-        }}>
+      <div className="p-3">
+        <div className="text-gray-400 text-sm mb-3">
           Нет серверов
         </div>
         
         {!isCreating ? (
-          <button 
+          <Button 
             onClick={() => setIsCreating(true)}
-            style={{ 
-              width: "100%", 
-              padding: "8px", 
-              fontSize: "12px",
-              backgroundColor: "var(--bg-700)",
-              border: "1px solid var(--border)",
-              color: "var(--text-300)",
-              borderRadius: "4px",
-              cursor: "pointer"
-            }}
+            variant="outline"
+            size="sm"
+            className="w-full bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-300 hover:text-white"
           >
             + Создать сервер
-          </button>
+          </Button>
         ) : (
-          <div style={{ display: "grid", gap: "8px" }}>
-            <input 
+          <div className="space-y-2">
+            <Input 
               placeholder="Название сервера" 
               value={name} 
               onChange={(e) => setName(e.target.value)}
-              className="input"
-              style={{ fontSize: "12px", padding: "6px 8px" }}
+              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
             />
-            <div style={{ display: "flex", gap: "4px" }}>
-              <button 
+            <div className="flex gap-2">
+              <Button 
                 onClick={handleCreateGuild} 
                 disabled={createGuildMutation.isPending || !name.trim()}
-                style={{ 
-                  flex: 1, 
-                  fontSize: "12px", 
-                  padding: "6px 8px",
-                  backgroundColor: "var(--brand)",
-                  border: "none",
-                  color: "white",
-                  borderRadius: "4px",
-                  cursor: "pointer"
-                }}
+                size="sm"
+                className="flex-1 bg-discord-blurple hover:bg-blue-600 disabled:bg-gray-600"
               >
                 {createGuildMutation.isPending ? "Создание..." : "Создать"}
-              </button>
-              <button 
+              </Button>
+              <Button 
+                variant="outline"
                 onClick={() => {
                   setIsCreating(false);
                   setName("");
                 }}
-                style={{ 
-                  fontSize: "12px", 
-                  padding: "6px 8px",
-                  backgroundColor: "var(--bg-600)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-300)",
-                  borderRadius: "4px",
-                  cursor: "pointer"
-                }}
+                size="sm"
+                className="bg-gray-600 hover:bg-gray-500 border-gray-500 text-gray-300"
               >
                 Отмена
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -116,78 +91,58 @@ export function GuildList({ selectedGuildId, onGuildSelect }: GuildListProps) {
   }
 
   return (
-    <div>
+    <div className="p-3 space-y-2">
       {guilds.map((guild) => (
         <div
           key={guild.id}
-          className={`sidebar-item ${selectedGuildId === guild.id ? 'active' : ''}`}
+          className={`px-3 py-2 rounded-md cursor-pointer transition-colors duration-150 ${
+            selectedGuildId === guild.id 
+              ? 'bg-gray-700 text-white' 
+              : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+          }`}
           onClick={() => onGuildSelect?.(guild.id)}
-          style={{ cursor: 'pointer' }}
         >
           🏠 {guild.name}
         </div>
       ))}
       
       {!isCreating ? (
-        <button 
+        <Button 
           onClick={() => setIsCreating(true)}
-          style={{ 
-            width: "100%", 
-            padding: "8px", 
-            fontSize: "12px",
-            backgroundColor: "var(--bg-700)",
-            border: "1px solid var(--border)",
-            color: "var(--text-300)",
-            borderRadius: "4px",
-            cursor: "pointer",
-            marginTop: "8px"
-          }}
+          variant="outline"
+          size="sm"
+          className="w-full mt-2 bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-300 hover:text-white"
         >
           + Создать сервер
-        </button>
+        </Button>
       ) : (
-        <div style={{ display: "grid", gap: "8px", marginTop: "8px" }}>
-          <input 
+        <div className="space-y-2 mt-2">
+          <Input 
             placeholder="Название сервера" 
             value={name} 
             onChange={(e) => setName(e.target.value)}
-            className="input"
-            style={{ fontSize: "12px", padding: "6px 8px" }}
+            className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
           />
-          <div style={{ display: "flex", gap: "4px" }}>
-            <button 
+          <div className="flex gap-2">
+            <Button 
               onClick={handleCreateGuild} 
               disabled={createGuildMutation.isPending || !name.trim()}
-              style={{ 
-                flex: 1, 
-                fontSize: "12px", 
-                padding: "6px 8px",
-                backgroundColor: "var(--brand)",
-                border: "none",
-                color: "white",
-                borderRadius: "4px",
-                cursor: "pointer"
-              }}
+              size="sm"
+              className="flex-1 bg-discord-blurple hover:bg-blue-600 disabled:bg-gray-600"
             >
               {createGuildMutation.isPending ? "Создание..." : "Создать"}
-            </button>
-            <button 
+            </Button>
+            <Button 
+              variant="outline"
               onClick={() => {
                 setIsCreating(false);
                 setName("");
               }}
-              style={{ 
-                fontSize: "12px", 
-                padding: "6px 8px",
-                backgroundColor: "var(--bg-600)",
-                border: "1px solid var(--border)",
-                color: "var(--text-300)",
-                borderRadius: "4px",
-                cursor: "pointer"
-              }}
+              size="sm"
+              className="bg-gray-600 hover:bg-gray-500 border-gray-500 text-gray-300"
             >
               Отмена
-            </button>
+            </Button>
           </div>
         </div>
       )}

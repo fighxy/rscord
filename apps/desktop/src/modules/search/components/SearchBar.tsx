@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { searchMessages, searchChannels } from "../api";
 import { useAuth } from "../../auth/store";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface SearchResult {
   id: string;
@@ -100,228 +102,116 @@ export function SearchBar() {
     if (minutes < 1) return 'только что';
     if (minutes < 60) return `${minutes} мин назад`;
     if (hours < 24) return `${hours} ч назад`;
-    return `${days} дн назад`;
+    if (days < 7) return `${days} дн назад`;
+    return date.toLocaleDateString('ru-RU');
   };
 
   const highlightText = (text: string, query: string) => {
     if (!query) return text;
     const regex = new RegExp(`(${query})`, 'gi');
-    return text.replace(regex, '<mark style="background-color: var(--brand); color: white; padding: 0 2px; border-radius: 2px;">$1</mark>');
+    return text.replace(regex, '<mark class="bg-yellow-200 text-black px-1 rounded">$1</mark>');
   };
 
   if (!user) return null;
 
   return (
-    <div ref={searchRef} style={{ position: 'relative', width: '100%' }}>
-      {/* Поисковая строка */}
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px' }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          <input
-            type="text"
-            placeholder="Поиск по сообщениям и каналам..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px 8px 36px',
-              border: '1px solid var(--border)',
-              borderRadius: '6px',
-              backgroundColor: 'var(--bg-700)',
-              color: 'var(--text-100)',
-              fontSize: '14px'
-            }}
-          />
-          <div style={{
-            position: 'absolute',
-            left: '12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--text-500)',
-            fontSize: '16px'
-          }}>
-            🔍
-          </div>
-        </div>
-        
-        <select
-          value={searchType}
-          onChange={(e) => setSearchType(e.target.value as 'all' | 'messages' | 'channels')}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid var(--border)',
-            borderRadius: '6px',
-            backgroundColor: 'var(--bg-700)',
-            color: 'var(--text-100)',
-            fontSize: '14px'
-          }}
+    <div className="relative" ref={searchRef}>
+      <form onSubmit={handleSearch} className="flex gap-2">
+        <Input
+          type="text"
+          placeholder="Поиск сообщений и каналов..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
+        />
+        <Button 
+          type="submit" 
+          size="sm"
+          className="bg-discord-blurple hover:bg-blue-600"
         >
-          <option value="all">Все</option>
-          <option value="messages">Сообщения</option>
-          <option value="channels">Каналы</option>
-        </select>
-        
-        <button
-          type="submit"
-          disabled={!query.trim()}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: 'var(--brand)',
-            border: 'none',
-            borderRadius: '6px',
-            color: 'white',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-            opacity: query.trim() ? 1 : 0.6
-          }}
-        >
-          Найти
-        </button>
+          🔍
+        </Button>
       </form>
 
-      {/* Результаты поиска */}
+      {/* Выпадающее меню поиска */}
       {isOpen && query.trim() && (
-        <div style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          backgroundColor: 'var(--bg-800)',
-          border: '1px solid var(--border)',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-          zIndex: 1000,
-          maxHeight: '500px',
-          overflowY: 'auto',
-          marginTop: '8px'
-        }}>
-          {/* Заголовок результатов */}
-          <div style={{
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--border)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}>
-            <h3 style={{ margin: 0, color: 'var(--text-100)', fontSize: '14px' }}>
-              Результаты поиска
-            </h3>
-            <button
-              onClick={() => setIsOpen(false)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-500)',
-                cursor: 'pointer',
-                fontSize: '16px',
-                padding: '4px'
-              }}
-            >
-              ✕
-            </button>
+        <div className="absolute top-full left-0 right-0 mt-2 bg-discord-dark border border-gray-700 rounded-lg shadow-xl max-h-96 overflow-y-auto z-50">
+          {/* Заголовок */}
+          <div className="p-3 border-b border-gray-700 bg-discord-dark">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-200">
+                Результаты поиска для "{query}"
+              </span>
+              <div className="flex gap-1">
+                <Button
+                  variant={searchType === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSearchType('all')}
+                  className="text-xs px-2 py-1 h-6"
+                >
+                  Все
+                </Button>
+                <Button
+                  variant={searchType === 'messages' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSearchType('messages')}
+                  className="text-xs px-2 py-1 h-6"
+                >
+                  Сообщения
+                </Button>
+                <Button
+                  variant={searchType === 'channels' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setSearchType('channels')}
+                  className="text-xs px-2 py-1 h-6"
+                >
+                  Каналы
+                </Button>
+              </div>
+            </div>
           </div>
 
-          {/* Состояние загрузки */}
-          {isLoading && (
-            <div style={{
-              padding: '32px 16px',
-              textAlign: 'center',
-              color: 'var(--text-500)',
-              fontSize: '14px'
-            }}>
-              🔍 Поиск...
+          {/* Результаты */}
+          {isLoading ? (
+            <div className="p-4 text-center text-gray-400">
+              Поиск...
             </div>
-          )}
-
-          {/* Нет результатов */}
-          {!isLoading && !hasResults && (
-            <div style={{
-              padding: '32px 16px',
-              textAlign: 'center',
-              color: 'var(--text-500)',
-              fontSize: '14px'
-            }}>
-              Ничего не найдено по запросу "{query}"
+          ) : !hasResults ? (
+            <div className="p-4 text-center text-gray-400">
+              Ничего не найдено
             </div>
-          )}
-
-          {/* Результаты поиска */}
-          {!isLoading && hasResults && (
+          ) : (
             <div>
               {/* Сообщения */}
               {messageResults && messageResults.length > 0 && (
                 <div>
-                  <div style={{
-                    padding: '8px 16px',
-                    backgroundColor: 'var(--bg-700)',
-                    color: 'var(--text-400)',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    textTransform: 'uppercase'
-                  }}>
+                  <div className="px-4 py-2 bg-gray-700 text-gray-300 text-xs font-semibold uppercase">
                     Сообщения ({messageResults.length})
                   </div>
                   {messageResults.map((result) => (
                     <div
                       key={`msg-${result.id}`}
                       onClick={() => handleResultClick(messageToSearchResult(result))}
-                      style={{
-                        padding: '12px 16px',
-                        borderBottom: '1px solid var(--border-200)',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--bg-700)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
+                      className="p-3 border-b border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors duration-200"
                     >
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '12px'
-                      }}>
-                        <div style={{
-                          fontSize: '16px',
-                          color: 'var(--text-400)'
-                        }}>
-                          💬
+                      <div className="flex gap-3">
+                        <div className="w-8 h-8 bg-discord-blurple rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                          {result.author_name?.slice(0, 2).toUpperCase() || 'U'}
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            marginBottom: '4px'
-                          }}>
-                            <span style={{
-                              fontWeight: '600',
-                              color: 'var(--text-100)',
-                              fontSize: '13px'
-                            }}>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-gray-200 text-sm">
                               {result.author_name || 'Неизвестный'}
                             </span>
-                            <span style={{
-                              color: 'var(--text-500)',
-                              fontSize: '11px'
-                            }}>
+                            <span className="text-gray-400 text-xs">
                               в #{result.channel_name}
                             </span>
-                            <span style={{
-                              color: 'var(--text-500)',
-                              fontSize: '11px'
-                            }}>
+                            <span className="text-gray-400 text-xs">
                               {formatTime(result.timestamp)}
                             </span>
                           </div>
                           <div
-                            style={{
-                              color: 'var(--text-300)',
-                              fontSize: '13px',
-                              lineHeight: '1.4'
-                            }}
+                            className="text-gray-300 text-sm leading-relaxed"
                             dangerouslySetInnerHTML={{
                               __html: highlightText(result.content, query)
                             }}
@@ -336,57 +226,24 @@ export function SearchBar() {
               {/* Каналы */}
               {channelResults && channelResults.length > 0 && (
                 <div>
-                  <div style={{
-                    padding: '8px 16px',
-                    backgroundColor: 'var(--bg-700)',
-                    color: 'var(--text-400)',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    textTransform: 'uppercase'
-                  }}>
+                  <div className="px-4 py-2 bg-gray-700 text-gray-300 text-xs font-semibold uppercase">
                     Каналы ({channelResults.length})
                   </div>
                   {channelResults.map((result) => (
                     <div
                       key={`chan-${result.id}`}
                       onClick={() => handleResultClick(channelToSearchResult(result))}
-                      style={{
-                        padding: '12px 16px',
-                        borderBottom: '1px solid var(--border-200)',
-                        cursor: 'pointer',
-                        transition: 'background-color 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--bg-700)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
+                      className="p-3 border-b border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors duration-200"
                     >
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px'
-                      }}>
-                        <div style={{
-                          fontSize: '16px',
-                          color: 'var(--text-400)'
-                        }}>
+                      <div className="flex items-center gap-3">
+                        <div className="text-base text-gray-400">
                           {result.type === 'voice' ? '🎤' : '#'}
                         </div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{
-                            fontWeight: '600',
-                            color: 'var(--text-100)',
-                            fontSize: '14px',
-                            marginBottom: '4px'
-                          }}>
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-200 text-sm mb-1">
                             {result.name}
                           </div>
-                          <div style={{
-                            color: 'var(--text-500)',
-                            fontSize: '12px'
-                          }}>
+                          <div className="text-gray-400 text-xs">
                             Сервер: {result.guild_name}
                           </div>
                         </div>

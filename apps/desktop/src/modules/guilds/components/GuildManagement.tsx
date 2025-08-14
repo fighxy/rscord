@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { RoleManager } from "../../roles/components/RoleManager";
 import { MemberList } from "../../layout/MemberList";
-import "./GuildManagement.css";
 
 interface GuildManagementProps {
   guildId: string;
@@ -13,17 +12,25 @@ export function GuildManagement({ guildId }: GuildManagementProps) {
   const [activeTab, setActiveTab] = useState<TabType>("roles");
 
   return (
-    <div className="guild-management">
+    <div className="p-6 bg-discord-dark rounded-lg">
       {/* Вкладки */}
-      <div className="management-tabs">
+      <div className="flex gap-1 mb-6 bg-gray-700 p-1 rounded-lg">
         <button
-          className={`tab-button ${activeTab === "roles" ? "active" : ""}`}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+            activeTab === "roles"
+              ? 'bg-discord-blurple text-white'
+              : 'text-gray-300 hover:text-white hover:bg-gray-600'
+          }`}
           onClick={() => setActiveTab("roles")}
         >
           Роли
         </button>
         <button
-          className={`tab-button ${activeTab === "members" ? "active" : ""}`}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+            activeTab === "members"
+              ? 'bg-discord-blurple text-white'
+              : 'text-gray-300 hover:text-white hover:bg-gray-600'
+          }`}
           onClick={() => setActiveTab("members")}
         >
           Участники
@@ -31,7 +38,7 @@ export function GuildManagement({ guildId }: GuildManagementProps) {
       </div>
 
       {/* Содержимое вкладок */}
-      <div className="tab-content">
+      <div>
         {activeTab === "roles" && (
           <RoleManager guildId={guildId} />
         )}
@@ -39,7 +46,6 @@ export function GuildManagement({ guildId }: GuildManagementProps) {
           <MemberList guildId={guildId} />
         )}
       </div>
-
     </div>
   );
 }

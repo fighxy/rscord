@@ -3,6 +3,8 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createChannel } from "../channels/api";
 import { useAuth } from "../auth/store";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface ChannelSidebarProps {
   guildId: string;
@@ -45,120 +47,76 @@ export function ChannelSidebar({ guildId, selectedChannelId, onChannelSelect, on
   };
 
   return (
-    <>
-      <div className="sidebar-header">
-        Каналы
-        <button
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-discord-dark">
+        <h2 className="text-sm font-semibold text-gray-200 uppercase tracking-wider">Каналы</h2>
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => setIsCreating(true)}
-          style={{
-            float: "right",
-            background: "none",
-            border: "none",
-            color: "var(--text-400)",
-            cursor: "pointer",
-            fontSize: "16px",
-            padding: "0",
-            width: "20px",
-            height: "20px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-          }}
+          className="w-6 h-6 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-full hover:scale-105 transition-all duration-200"
           title="Создать канал"
         >
           +
-        </button>
+        </Button>
       </div>
-      <div className="sidebar-list">
+      
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {isCreating && (
-          <div style={{ 
-            padding: "8px", 
-            backgroundColor: "var(--bg-700)", 
-            borderRadius: "4px",
-            marginBottom: "8px"
-          }}>
-            <input
+          <div className="bg-gray-800 rounded-lg p-3 border border-gray-700 space-y-3">
+            <Input
               placeholder="Название канала"
               value={channelName}
               onChange={(e) => setChannelName(e.target.value)}
-              className="input"
-              style={{ fontSize: "12px", padding: "6px 8px", marginBottom: "8px" }}
+              className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
             />
             
-            {/* Выбор типа канала */}
-            <div style={{ 
-              display: "flex", 
-              gap: "8px", 
-              marginBottom: "8px",
-              fontSize: "12px"
-            }}>
-              <label style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                gap: "4px",
-                color: "var(--text-300)",
-                cursor: "pointer"
-              }}>
+            {/* Channel Type Selection */}
+            <div className="flex gap-3 text-sm">
+              <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
                 <input
                   type="radio"
                   name="channelType"
                   value="text"
                   defaultChecked
-                  style={{ margin: 0 }}
+                  className="text-discord-blurple focus:ring-discord-blurple"
                 />
                 💬 Текстовый
               </label>
-              <label style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                gap: "4px",
-                color: "var(--text-300)",
-                cursor: "pointer"
-              }}>
+              <label className="flex items-center gap-2 text-gray-300 cursor-pointer">
                 <input
                   type="radio"
                   name="channelType"
                   value="voice"
-                  style={{ margin: 0 }}
+                  className="text-discord-blurple focus:ring-discord-blurple"
                 />
                 🎤 Голосовой
               </label>
             </div>
             
-            <div style={{ display: "flex", gap: "4px" }}>
-              <button
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button
                 onClick={handleCreateChannel}
                 disabled={createChannelMutation.isPending || !channelName.trim()}
-                style={{
-                  flex: 1,
-                  fontSize: "12px",
-                  padding: "6px 8px",
-                  backgroundColor: "var(--brand)",
-                  border: "none",
-                  color: "white",
-                  borderRadius: "4px",
-                  cursor: "pointer"
-                }}
+                className="flex-1 bg-discord-blurple hover:bg-blue-600 disabled:bg-gray-600"
+                size="sm"
               >
                 {createChannelMutation.isPending ? "Создание..." : "Создать"}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => {
                   setIsCreating(false);
                   setChannelName("");
                 }}
-                style={{
-                  fontSize: "12px",
-                  padding: "6px 8px",
-                  backgroundColor: "var(--bg-600)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-300)",
-                  borderRadius: "4px",
-                  cursor: "pointer"
-                }}
+                size="sm"
+                className="bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-300"
               >
                 Отмена
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -170,7 +128,7 @@ export function ChannelSidebar({ guildId, selectedChannelId, onChannelSelect, on
           onVoiceChannelJoin={onVoiceChannelJoin}
         />
       </div>
-    </>
+    </div>
   );
 }
 

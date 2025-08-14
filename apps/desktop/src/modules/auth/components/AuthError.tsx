@@ -6,14 +6,7 @@ export function AuthError({ error }: AuthErrorProps) {
   if (!error) return null;
 
   return (
-    <div style={{ 
-      padding: "8px 12px", 
-      backgroundColor: "var(--error-100)", 
-      color: "var(--error-600)",
-      borderRadius: "4px",
-      fontSize: "14px",
-      marginBottom: "8px"
-    }}>
+    <div className="p-3 mb-2 bg-red-900/20 border border-red-800 text-red-300 rounded-md text-sm">
       {error}
     </div>
   );

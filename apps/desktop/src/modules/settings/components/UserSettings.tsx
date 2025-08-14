@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../auth/store";
 import { updateUserProfile, changePassword } from "../api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface UserSettingsForm {
   display_name: string;
@@ -105,308 +107,165 @@ export function UserSettings() {
         confirm_password: ''
       }));
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Ошибка при смене пароля' });
+      setMessage({ type: 'error', text: error.message || 'Ошибка при изменении пароля' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const tabs = [
-    { id: 'profile', label: 'Профиль', icon: '👤' },
-    { id: 'security', label: 'Безопасность', icon: '🔒' },
-    { id: 'notifications', label: 'Уведомления', icon: '🔔' },
-    { id: 'privacy', label: 'Приватность', icon: '🛡️' }
-  ] as const;
-
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="grid place-items-center h-full text-gray-400">
+        Загрузка...
+      </div>
+    );
+  }
 
   return (
-    <div style={{
-      maxWidth: '800px',
-      margin: '0 auto',
-      padding: '24px',
-      backgroundColor: 'var(--bg-800)',
-      borderRadius: '8px',
-      border: '1px solid var(--border)'
-    }}>
-      {/* Заголовок */}
-      <div style={{
-        marginBottom: '24px',
-        textAlign: 'center'
-      }}>
-        <h1 style={{
-          margin: 0,
-          color: 'var(--text-100)',
-          fontSize: '24px',
-          fontWeight: '600'
-        }}>
-          Настройки пользователя
-        </h1>
-        <p style={{
-          margin: '8px 0 0 0',
-          color: 'var(--text-500)',
-          fontSize: '14px'
-        }}>
-          Управляйте своим профилем и настройками
-        </p>
-      </div>
+    <div className="p-6 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold text-white mb-6">Настройки пользователя</h1>
 
       {/* Сообщения */}
       {message && (
-        <div style={{
-          padding: '12px 16px',
-          backgroundColor: message.type === 'success' ? 'var(--success)' : 'var(--error-600)',
-          color: 'white',
-          borderRadius: '6px',
-          marginBottom: '16px',
-          fontSize: '14px'
-        }}>
+        <div className={`p-3 mb-4 rounded-md ${
+          message.type === 'success' 
+            ? 'bg-green-900/20 border border-green-800 text-green-300' 
+            : 'bg-red-900/20 border border-red-800 text-red-300'
+        }`}>
           {message.text}
         </div>
       )}
 
-      {/* Табы */}
-      <div style={{
-        display: 'flex',
-        borderBottom: '1px solid var(--border)',
-        marginBottom: '24px'
-      }}>
-        {tabs.map(tab => (
+      {/* Навигация по вкладкам */}
+      <div className="flex gap-1 mb-6 bg-gray-700 p-1 rounded-lg">
+        {(['profile', 'security', 'notifications', 'privacy'] as const).map((tab) => (
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              background: 'none',
-              border: 'none',
-              padding: '12px 24px',
-              color: activeTab === tab.id ? 'var(--brand)' : 'var(--text-400)',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: activeTab === tab.id ? '600' : '400',
-              borderBottom: activeTab === tab.id ? '2px solid var(--brand)' : 'none',
-              transition: 'all 0.2s'
-            }}
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+              activeTab === tab
+                ? 'bg-discord-blurple text-white'
+                : 'text-gray-300 hover:text-white hover:bg-gray-600'
+            }`}
           >
-            {tab.icon} {tab.label}
+            {tab === 'profile' && 'Профиль'}
+            {tab === 'security' && 'Безопасность'}
+            {tab === 'notifications' && 'Уведомления'}
+            {tab === 'privacy' && 'Приватность'}
           </button>
         ))}
       </div>
 
-      {/* Содержимое табов */}
-      <div>
+      {/* Содержимое вкладок */}
+      <div className="bg-discord-dark rounded-lg p-6">
         {/* Профиль */}
         {activeTab === 'profile' && (
-          <form onSubmit={handleProfileUpdate}>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                color: 'var(--text-100)',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}>
-                Отображаемое имя
+          <form onSubmit={handleProfileUpdate} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Имя пользователя
               </label>
-              <input
+              <Input
                 type="text"
                 value={form.display_name}
                 onChange={(e) => handleInputChange('display_name', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  backgroundColor: 'var(--bg-700)',
-                  color: 'var(--text-100)',
-                  fontSize: '14px'
-                }}
-                placeholder="Введите отображаемое имя"
+                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
+                placeholder="Введите имя пользователя"
                 required
               />
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                color: 'var(--text-100)',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Email
               </label>
-              <input
+              <Input
                 type="email"
                 value={form.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  backgroundColor: 'var(--bg-700)',
-                  color: 'var(--text-100)',
-                  fontSize: '14px'
-                }}
+                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
                 placeholder="Введите email"
                 required
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              style={{
-                padding: '10px 24px',
-                backgroundColor: 'var(--brand)',
-                border: 'none',
-                borderRadius: '6px',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-                opacity: isLoading ? 0.6 : 1
-              }}
+              className="bg-discord-blurple hover:bg-blue-600 disabled:opacity-60"
             >
-              {isLoading ? 'Сохранение...' : 'Сохранить изменения'}
-            </button>
+              {isLoading ? 'Обновление...' : 'Обновить профиль'}
+            </Button>
           </form>
         )}
 
         {/* Безопасность */}
         {activeTab === 'security' && (
-          <form onSubmit={handlePasswordChange}>
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                color: 'var(--text-100)',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}>
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Текущий пароль
               </label>
-              <input
+              <Input
                 type="password"
                 value={form.current_password}
                 onChange={(e) => handleInputChange('current_password', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  backgroundColor: 'var(--bg-700)',
-                  color: 'var(--text-100)',
-                  fontSize: '14px'
-                }}
+                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
                 placeholder="Введите текущий пароль"
                 required
               />
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                color: 'var(--text-100)',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Новый пароль
               </label>
-              <input
+              <Input
                 type="password"
                 value={form.new_password}
                 onChange={(e) => handleInputChange('new_password', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  backgroundColor: 'var(--bg-700)',
-                  color: 'var(--text-100)',
-                  fontSize: '14px'
-                }}
-                placeholder="Введите новый пароль (минимум 6 символов)"
+                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
+                placeholder="Введите новый пароль"
                 required
               />
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                color: 'var(--text-100)',
-                fontSize: '14px',
-                fontWeight: '600'
-              }}>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Подтвердите новый пароль
               </label>
-              <input
+              <Input
                 type="password"
                 value={form.confirm_password}
                 onChange={(e) => handleInputChange('confirm_password', e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  backgroundColor: 'var(--bg-700)',
-                  color: 'var(--text-100)',
-                  fontSize: '14px'
-                }}
+                className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
                 placeholder="Повторите новый пароль"
                 required
               />
             </div>
 
-            <button
+            <Button
               type="submit"
               disabled={isLoading}
-              style={{
-                padding: '10px 24px',
-                backgroundColor: 'var(--danger)',
-                border: 'none',
-                borderRadius: '6px',
-                color: 'white',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: '600',
-                opacity: isLoading ? 0.6 : 1
-              }}
+              variant="destructive"
+              className="disabled:opacity-60"
             >
               {isLoading ? 'Изменение...' : 'Изменить пароль'}
-            </button>
+            </Button>
           </form>
         )}
 
         {/* Уведомления */}
         {activeTab === 'notifications' && (
           <div>
-            <div style={{
-              padding: '20px',
-              backgroundColor: 'var(--bg-700)',
-              borderRadius: '6px',
-              textAlign: 'center'
-            }}>
-              <div style={{
-                fontSize: '48px',
-                marginBottom: '16px'
-              }}>
+            <div className="p-5 bg-gray-700 rounded-lg text-center">
+              <div className="text-5xl mb-4">
                 🔔
               </div>
-              <h3 style={{
-                margin: '0 0 8px 0',
-                color: 'var(--text-100)',
-                fontSize: '18px'
-              }}>
+              <h3 className="text-lg font-semibold text-gray-200 mb-2">
                 Настройки уведомлений
               </h3>
-              <p style={{
-                margin: 0,
-                color: 'var(--text-500)',
-                fontSize: '14px'
-              }}>
+              <p className="text-gray-400 text-sm">
                 Функция находится в разработке
               </p>
             </div>
@@ -416,30 +275,14 @@ export function UserSettings() {
         {/* Приватность */}
         {activeTab === 'privacy' && (
           <div>
-            <div style={{
-              padding: '20px',
-              backgroundColor: 'var(--bg-700)',
-              borderRadius: '6px',
-              textAlign: 'center'
-            }}>
-              <div style={{
-                fontSize: '48px',
-                marginBottom: '16px'
-              }}>
+            <div className="p-5 bg-gray-700 rounded-lg text-center">
+              <div className="text-5xl mb-4">
                 🛡️
               </div>
-              <h3 style={{
-                margin: '0 0 8px 0',
-                color: 'var(--text-100)',
-                fontSize: '18px'
-              }}>
+              <h3 className="text-lg font-semibold text-gray-200 mb-2">
                 Настройки приватности
               </h3>
-              <p style={{
-                margin: 0,
-                color: 'var(--text-500)',
-                fontSize: '14px'
-              }}>
+              <p className="text-gray-400 text-sm">
                 Функция находится в разработке
               </p>
             </div>

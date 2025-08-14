@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { useAuth } from "../../auth/store";
 import { uploadFile, getFileUrl } from "../api";
+import { Button } from "@/components/ui/button";
 
 interface FileUploadProps {
   channelId: string;
@@ -117,87 +118,73 @@ export function FileUpload({ channelId, onFileUploaded }: FileUploadProps) {
   if (!user) return null;
 
   return (
-    <div style={{ width: '100%' }}>
-      {/* Область перетаскивания */}
+    <div className="file-upload">
+      {/* Drag & Drop зона */}
       <div
+        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors duration-200 ${
+          isDragging
+            ? 'border-discord-blurple bg-blue-900/20'
+            : 'border-gray-600 hover:border-gray-500'
+        }`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        style={{
-          border: `2px dashed ${isDragging ? 'var(--brand)' : 'var(--border)'}`,
-          borderRadius: '8px',
-          padding: '32px 16px',
-          textAlign: 'center',
-          cursor: 'pointer',
-          backgroundColor: isDragging ? 'var(--bg-700)' : 'var(--bg-800)',
-          transition: 'all 0.2s',
-          position: 'relative'
-        }}
       >
-        {uploading ? (
-          <div>
-            <div style={{ fontSize: '24px', marginBottom: '8px' }}>📤</div>
-            <div style={{ color: 'var(--text-100)', fontSize: '14px', marginBottom: '8px' }}>
-              Загрузка файла...
-            </div>
-            <div style={{
-              width: '100%',
-              height: '4px',
-              backgroundColor: 'var(--bg-700)',
-              borderRadius: '2px',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                width: `${uploadProgress}%`,
-                height: '100%',
-                backgroundColor: 'var(--brand)',
-                transition: 'width 0.3s ease'
-              }} />
-            </div>
-            <div style={{ color: 'var(--text-500)', fontSize: '12px', marginTop: '4px' }}>
-              {uploadProgress.toFixed(1)}%
-            </div>
-          </div>
-        ) : (
-          <div>
-            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📎</div>
-            <div style={{ color: 'var(--text-100)', fontSize: '16px', marginBottom: '8px' }}>
-              Перетащите файлы сюда или кликните для выбора
-            </div>
-            <div style={{ color: 'var(--text-500)', fontSize: '12px' }}>
-              Максимальный размер: {MAX_FILE_SIZE / 1024 / 1024}MB
-            </div>
-            <div style={{ color: 'var(--text-500)', fontSize: '12px' }}>
-              Поддерживаемые форматы: изображения, видео, аудио, документы
-            </div>
-          </div>
-        )}
+        <div className="text-4xl mb-2">📁</div>
+        <p className="text-gray-300 mb-2">
+          Перетащите файлы сюда или <span className="text-discord-blurple">выберите файлы</span>
+        </p>
+        <p className="text-sm text-gray-400">
+          Максимальный размер: {MAX_FILE_SIZE / 1024 / 1024}MB
+        </p>
+        
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept={ALLOWED_TYPES.join(',')}
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          variant="outline"
+          className="mt-3 bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-300 hover:text-white"
+        >
+          Выбрать файлы
+        </Button>
       </div>
 
-      {/* Скрытый input для выбора файлов */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        onChange={handleFileSelect}
-        style={{ display: 'none' }}
-        accept={ALLOWED_TYPES.join(',')}
-      />
+      {/* Прогресс загрузки */}
+      {uploading && (
+        <div className="mt-4 p-3 bg-gray-700 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-300">Загрузка...</span>
+            <span className="text-sm text-gray-400">{uploadProgress}%</span>
+          </div>
+          <div className="w-full bg-gray-600 rounded-full h-2">
+            <div
+              className="bg-discord-blurple h-2 rounded-full transition-all duration-300"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// Компонент для отображения загруженных файлов
-interface FileDisplayProps {
+// Компонент для отображения загруженного файла
+interface FilePreviewProps {
   file: UploadedFile;
   onDelete?: (fileId: string) => void;
 }
 
-export function FileDisplay({ file, onDelete }: FileDisplayProps) {
-  const [isImage, setIsImage] = useState(file.mime_type.startsWith('image/'));
-  const [isVideo, setIsVideo] = useState(file.mime_type.startsWith('video/'));
-  const [isAudio, setIsAudio] = useState(file.mime_type.startsWith('audio/'));
+export function FilePreview({ file, onDelete }: FilePreviewProps) {
+  const isImage = file.mime_type.startsWith('image/');
+  const isVideo = file.mime_type.startsWith('video/');
+  const isAudio = file.mime_type.startsWith('audio/');
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -218,38 +205,24 @@ export function FileDisplay({ file, onDelete }: FileDisplayProps) {
   };
 
   return (
-    <div style={{
-      border: '1px solid var(--border)',
-      borderRadius: '6px',
-      padding: '12px',
-      backgroundColor: 'var(--bg-700)',
-      marginBottom: '8px'
-    }}>
+    <div className="p-3 bg-gray-700 rounded-lg border border-gray-600">
       {/* Предварительный просмотр для изображений */}
       {isImage && (
-        <div style={{ marginBottom: '8px' }}>
+        <div className="mb-2">
           <img
             src={file.url}
             alt={file.original_name}
-            style={{
-              maxWidth: '100%',
-              maxHeight: '200px',
-              borderRadius: '4px'
-            }}
+            className="max-w-full max-h-48 rounded"
           />
         </div>
       )}
 
       {/* Предварительный просмотр для видео */}
       {isVideo && (
-        <div style={{ marginBottom: '8px' }}>
+        <div className="mb-2">
           <video
             controls
-            style={{
-              maxWidth: '100%',
-              maxHeight: '200px',
-              borderRadius: '4px'
-            }}
+            className="max-w-full max-h-48 rounded"
           >
             <source src={file.url} type={file.mime_type} />
             Ваш браузер не поддерживает видео.
@@ -259,8 +232,8 @@ export function FileDisplay({ file, onDelete }: FileDisplayProps) {
 
       {/* Предварительный просмотр для аудио */}
       {isAudio && (
-        <div style={{ marginBottom: '8px' }}>
-          <audio controls style={{ width: '100%' }}>
+        <div className="mb-2">
+          <audio controls className="w-full">
             <source src={file.url} type={file.mime_type} />
             Ваш браузер не поддерживает аудио.
           </audio>
@@ -268,63 +241,38 @@ export function FileDisplay({ file, onDelete }: FileDisplayProps) {
       )}
 
       {/* Информация о файле */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}>
-        <div style={{ fontSize: '20px' }}>
+      <div className="flex items-center gap-2">
+        <div className="text-xl">
           {getFileIcon(file.mime_type)}
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{
-            color: 'var(--text-100)',
-            fontSize: '14px',
-            fontWeight: '600',
-            marginBottom: '2px'
-          }}>
+        <div className="flex-1">
+          <div className="text-gray-200 text-sm font-semibold mb-0.5">
             {file.original_name}
           </div>
-          <div style={{
-            color: 'var(--text-500)',
-            fontSize: '12px'
-          }}>
+          <div className="text-gray-400 text-xs">
             {formatFileSize(file.size)} • {new Date(file.uploaded_at).toLocaleDateString()}
           </div>
         </div>
         
         {/* Кнопки действий */}
-        <div style={{ display: 'flex', gap: '4px' }}>
+        <div className="flex gap-1">
           <a
             href={file.url}
             download={file.original_name}
-            style={{
-              padding: '4px 8px',
-              backgroundColor: 'var(--brand)',
-              color: 'white',
-              textDecoration: 'none',
-              borderRadius: '4px',
-              fontSize: '12px'
-            }}
+            className="px-2 py-1 bg-discord-blurple hover:bg-blue-600 text-white text-xs rounded no-underline"
           >
             Скачать
           </a>
           
           {onDelete && (
-            <button
+            <Button
               onClick={() => onDelete(file.id)}
-              style={{
-                padding: '4px 8px',
-                backgroundColor: 'var(--danger)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px'
-              }}
+              variant="destructive"
+              size="sm"
+              className="text-xs px-2 py-1 h-6"
             >
               Удалить
-            </button>
+            </Button>
           )}
         </div>
       </div>

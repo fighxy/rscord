@@ -47,13 +47,7 @@ export default function HomePage() {
 
   if (!user) {
     return (
-      <div style={{ 
-        display: "grid", 
-        placeItems: "center", 
-        height: "100vh", 
-        color: "var(--text-500)",
-        fontSize: "18px"
-      }}>
+      <div className="grid place-items-center h-screen text-gray-400 text-lg">
         Загрузка...
       </div>
     );
@@ -63,26 +57,32 @@ export default function HomePage() {
     <AppShell
       guildBar={<GuildBar />}
       sidebar={
-        <>
-          <div className="sidebar-header">Сервера</div>
-          <div className="sidebar-list">
-            <GuildList 
-              selectedGuildId={selectedGuild}
-              onGuildSelect={handleGuildSelect}
-            />
-            
-            {selectedGuild && (
-              <div style={{ marginTop: 16 }}>
-                <ChannelSidebar 
-                  guildId={selectedGuild}
-                  selectedChannelId={selectedChannel}
-                  onChannelSelect={handleChannelSelect}
-                  onVoiceChannelJoin={handleVoiceChannelJoin}
-                />
-              </div>
-            )}
+        <div className="flex flex-col h-full">
+          {/* Guilds Section */}
+          <div className="flex flex-col">
+            <div className="px-4 py-3 border-b border-gray-700 bg-discord-dark">
+              <h2 className="text-sm font-semibold text-gray-200 uppercase tracking-wider">Сервера</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <GuildList 
+                selectedGuildId={selectedGuild}
+                onGuildSelect={handleGuildSelect}
+              />
+            </div>
           </div>
-        </>
+          
+          {/* Channels Section */}
+          {selectedGuild && (
+            <div className="flex-1">
+              <ChannelSidebar 
+                guildId={selectedGuild}
+                selectedChannelId={selectedChannel}
+                onChannelSelect={handleChannelSelect}
+                onVoiceChannelJoin={handleVoiceChannelJoin}
+              />
+            </div>
+          )}
+        </div>
       }
       chat={
         <ChatPane 

@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../auth/store";
 import { getGuildMembers, getUserRoles, assignRole, removeRole, getGuildRoles } from "../roles/api";
-import "./MemberList.css";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 interface Member {
   id: string;
@@ -93,74 +96,80 @@ export function MemberList({ guildId }: MemberListProps) {
   if (!user || !hasPermission('view_members')) return null;
 
   return (
-    <div className="member-list-container">
-      {/* Заголовок */}
-      <div className="members-header">
-        <h3>Участники ({members.length})</h3>
+    <div className="flex flex-col h-full bg-discord-dark">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+        <h3 className="text-sm font-semibold text-gray-200">Участники ({members.length})</h3>
         {hasPermission('manage_roles') && (
-          <button
-            className="manage-roles-btn"
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowRoleAssignment(!showRoleAssignment)}
+            className="text-xs bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-300 hover:text-white"
             title="Нажмите на 'Назначить роль' для управления ролями участников"
           >
             Управление ролями
-          </button>
+          </Button>
         )}
       </div>
 
-      {/* Поиск */}
-      <div className="member-search">
-        <input
-          type="text"
+      {/* Search */}
+      <div className="p-3 border-b border-gray-700">
+        <Input
           placeholder="Поиск участников..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="search-input"
+          className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
         />
       </div>
 
-      {/* Список участников */}
-      <div className="members-list">
+      {/* Members List */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {isLoading ? (
-          <div className="loading">Загрузка участников...</div>
+          <div className="text-center text-gray-400 py-4">Загрузка участников...</div>
         ) : filteredMembers.length === 0 ? (
-          <div className="no-members">
+          <div className="text-center text-gray-400 py-4">
             {searchQuery ? 'Участники не найдены' : 'Нет участников'}
           </div>
         ) : (
           filteredMembers.map((member) => (
-            <div key={member.id} className="member-item">
-              {/* Аватар */}
-              <div className="member-avatar">
-                {member.display_name.charAt(0).toUpperCase()}
-              </div>
+            <div key={member.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 transition-colors duration-150">
+              {/* Avatar */}
+              <Avatar className="w-8 h-8">
+                <AvatarFallback className="bg-discord-blurple text-white text-sm font-medium">
+                  {member.display_name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
 
-              {/* Информация об участнике */}
-              <div className="member-info">
-                <div className="member-name">{member.display_name}</div>
-                <div className="member-email">{member.email}</div>
-                <div className="member-roles">
+              {/* Member Info */}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-white truncate">{member.display_name}</div>
+                <div className="text-xs text-gray-400 truncate">{member.email}</div>
+                <div className="flex flex-wrap gap-1 mt-1">
                   {member.roles.map((role) => (
-                    <span
+                    <Badge
                       key={role.id}
-                      className="role-badge"
-                      style={{ backgroundColor: role.color }}
+                      variant="secondary"
+                      className="text-xs"
+                      style={{ backgroundColor: role.color, color: 'white' }}
                     >
                       {role.name}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               </div>
 
-              {/* Действия */}
+              {/* Actions */}
               {hasPermission('manage_roles') && (
-                <div className="member-actions">
-                  <button
-                    className="assign-role-btn"
+                <div className="flex-shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setSelectedMember(member)}
+                    className="text-xs bg-gray-600 hover:bg-gray-500 border-gray-500 text-gray-300 hover:text-white"
                   >
                     Назначить роль
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -168,72 +177,80 @@ export function MemberList({ guildId }: MemberListProps) {
         )}
       </div>
 
-      {/* Модальное окно назначения ролей */}
+      {/* Role Assignment Modal */}
       {selectedMember && (
-        <div className="modal-overlay" onClick={() => setSelectedMember(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Управление ролями для {selectedMember.display_name}</h3>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedMember(null)}>
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white mb-4">Управление ролями для {selectedMember.display_name}</h3>
             
-            <div className="current-roles">
-              <h4>Текущие роли:</h4>
-              {selectedMember.roles.length === 0 ? (
-                <p>Нет назначенных ролей</p>
-              ) : (
-                <div className="role-list">
-                  {selectedMember.roles.map((role) => (
-                    <div key={role.id} className="role-item">
-                      <span
-                        className="role-badge"
-                        style={{ backgroundColor: role.color }}
-                      >
-                        {role.name}
-                      </span>
-                      <button
-                        className="remove-role-btn"
-                        onClick={() => handleRemoveRole(selectedMember.id, role.id)}
-                      >
-                        Убрать
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Текущие роли:</h4>
+                {selectedMember.roles.length === 0 ? (
+                  <p className="text-gray-400 text-sm">Нет назначенных ролей</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedMember.roles.map((role) => (
+                      <div key={role.id} className="flex items-center justify-between p-2 bg-gray-700 rounded">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs"
+                          style={{ backgroundColor: role.color, color: 'white' }}
+                        >
+                          {role.name}
+                        </Badge>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleRemoveRole(selectedMember.id, role.id)}
+                          className="text-xs"
+                        >
+                          Убрать
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-            <div className="available-roles">
-              <h4>Доступные роли:</h4>
-              <div className="role-list">
-                {roles
-                  .filter(role => !selectedMember.roles.find(r => r.id === role.id))
-                  .map((role) => (
-                    <div key={role.id} className="role-item">
-                      <span
-                        className="role-badge"
-                        style={{ backgroundColor: role.color }}
-                      >
-                        {role.name}
-                      </span>
-                      <button
-                        className="assign-role-btn"
-                        onClick={() => handleAssignRole(selectedMember.id, role.id)}
-                      >
-                        Назначить
-                      </button>
-                    </div>
-                  ))}
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-2">Доступные роли:</h4>
+                <div className="space-y-2">
+                  {roles
+                    .filter(role => !selectedMember.roles.find(r => r.id === role.id))
+                    .map((role) => (
+                      <div key={role.id} className="flex items-center justify-between p-2 bg-gray-700 rounded">
+                        <Badge
+                          variant="secondary"
+                          className="text-xs"
+                          style={{ backgroundColor: role.color, color: 'white' }}
+                        >
+                          {role.name}
+                        </Badge>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleAssignRole(selectedMember.id, role.id)}
+                          className="text-xs bg-green-600 hover:bg-green-500"
+                        >
+                          Назначить
+                        </Button>
+                      </div>
+                    ))}
+                </div>
               </div>
             </div>
 
-            <button
-              className="close-modal-btn"
+            <Button
+              variant="outline"
+              className="w-full mt-6 bg-gray-600 hover:bg-gray-500 border-gray-500 text-white"
               onClick={() => setSelectedMember(null)}
             >
               Закрыть
-            </button>
+            </Button>
           </div>
         </div>
       )}
-
     </div>
   );
 }

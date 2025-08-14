@@ -18,7 +18,7 @@ export function ChannelList({ guildId, selectedChannelId, onChannelSelect, onVoi
 
   if (!channels || channels.length === 0) {
     return (
-      <div style={{ padding: "8px", color: "var(--text-500)", fontSize: "14px" }}>
+      <div className="p-2 text-gray-400 text-sm">
         Нет каналов
       </div>
     );
@@ -37,30 +37,22 @@ export function ChannelList({ guildId, selectedChannelId, onChannelSelect, onVoi
   };
 
   return (
-    <div>
+    <div className="space-y-1">
       {channels.map((channel) => (
         <div
           key={channel.id}
-          className={`sidebar-item ${selectedChannelId === channel.id ? 'active' : ''}`}
+          className={`px-3 py-2 rounded-md cursor-pointer transition-colors duration-150 relative ${
+            selectedChannelId === channel.id 
+              ? 'bg-gray-700 text-white' 
+              : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+          }`}
           onClick={() => handleChannelClick(channel)}
           onDoubleClick={() => handleChannelDoubleClick(channel)}
-          style={{ 
-            cursor: 'pointer',
-            position: 'relative'
-          }}
           title={channel.channel_type === 'voice' ? 'Двойной клик для подключения к голосовому каналу' : undefined}
         >
           {channel.channel_type === 'voice' ? '🎤' : '#'} {channel.name}
           {channel.channel_type === 'voice' && (
-            <span style={{
-              position: 'absolute',
-              right: '8px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              fontSize: '10px',
-              color: 'var(--text-500)',
-              opacity: 0.7
-            }}>
+            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 opacity-70">
               2x
             </span>
           )}

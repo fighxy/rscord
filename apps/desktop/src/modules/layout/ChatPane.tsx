@@ -21,13 +21,7 @@ export function ChatPane({ channelId, autoJoinVoice }: ChatPaneProps) {
 
   if (!channelId) {
     return (
-      <div style={{ 
-        display: "grid", 
-        placeItems: "center", 
-        height: "100%", 
-        color: "var(--text-500)",
-        fontSize: "18px"
-      }}>
+      <div className="grid place-items-center h-full text-gray-400 text-lg">
         Выберите канал для начала общения
       </div>
     );
@@ -37,27 +31,30 @@ export function ChatPane({ channelId, autoJoinVoice }: ChatPaneProps) {
   const isVoiceChannel = channel?.channel_type === 'voice';
 
   return (
-    <>
-      <div className="chat-header">
+    <div className="flex flex-col h-full">
+      {/* Chat Header */}
+      <div className="flex items-center px-4 py-3 border-b border-gray-700 bg-discord-dark">
         {channel ? (
-          <>
-            {isVoiceChannel ? '🎤' : '#'} {channel.name}
+          <div className="flex items-center">
+            <span className="text-xl mr-2">
+              {isVoiceChannel ? '🎤' : '#'}
+            </span>
+            <span className="text-white font-medium">{channel.name}</span>
             {isVoiceChannel && (
-              <span style={{ 
-                fontSize: "12px", 
-                color: "var(--text-500)", 
-                marginLeft: "8px",
-                fontWeight: "normal"
-              }}>
+              <span className="ml-3 text-xs text-gray-400 font-normal">
                 Голосовой канал
               </span>
             )}
-          </>
+          </div>
         ) : (
-          `# ${channelId.slice(0, 8)}`
+          <div className="flex items-center">
+            <span className="text-xl mr-2">#</span>
+            <span className="text-white font-medium">{channelId.slice(0, 8)}</span>
+          </div>
         )}
       </div>
       
+      {/* Chat Content */}
       {isVoiceChannel ? (
         <VoiceChannelPane 
           channelId={channelId} 
@@ -65,15 +62,15 @@ export function ChatPane({ channelId, autoJoinVoice }: ChatPaneProps) {
           autoJoin={autoJoinVoice}
         />
       ) : (
-        <>
-          <div className="chat-scroll">
+        <div className="flex flex-col flex-1">
+          <div className="flex-1 overflow-y-auto">
             <MessageList channelId={channelId} />
             <TypingIndicator channelId={channelId} />
           </div>
           <MessageComposer channelId={channelId} />
-        </>
+        </div>
       )}
-    </>
+    </div>
   );
 }
 

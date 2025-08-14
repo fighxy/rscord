@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { SignalingClient, ServerMessage } from "../../../webrtc/signaling";
 import { VoiceMesh } from "../../../webrtc/voice";
 import { useAuth } from "../../auth/store";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface VoiceChannelPaneProps {
   channelId: string;
@@ -106,212 +108,117 @@ export function VoiceChannelPane({ channelId, channelName, autoJoin }: VoiceChan
 
   if (!user) {
     return (
-      <div style={{ 
-        display: "grid", 
-        placeItems: "center", 
-        height: "100%", 
-        color: "var(--text-500)",
-        fontSize: "16px"
-      }}>
+      <div className="grid place-items-center h-full text-gray-400 text-base">
         Пользователь не аутентифицирован
       </div>
     );
   }
 
   return (
-    <div style={{ 
-      display: "flex", 
-      flexDirection: "column", 
-      height: "100%",
-      padding: "16px"
-    }}>
+    <div className="flex flex-col h-full p-4">
       {/* Заголовок голосового канала */}
-      <div style={{ 
-        display: "flex", 
-        alignItems: "center", 
-        gap: "12px", 
-        marginBottom: "16px",
-        padding: "12px",
-        backgroundColor: "var(--bg-700)",
-        borderRadius: "8px"
-      }}>
-        <div style={{ 
-          width: "32px", 
-          height: "32px", 
-          borderRadius: "50%", 
-          backgroundColor: "var(--brand)",
-          display: "grid",
-          placeItems: "center",
-          color: "white",
-          fontSize: "16px"
-        }}>
-          🎤
-        </div>
+      <div className="flex items-center gap-3 mb-4 p-3 bg-gray-700 rounded-lg">
+        <Avatar className="w-8 h-8">
+          <AvatarFallback className="bg-discord-blurple text-white text-base">
+            🎤
+          </AvatarFallback>
+        </Avatar>
         <div>
-          <div style={{ fontWeight: "600", color: "var(--text-100)" }}>
+          <div className="font-semibold text-gray-200">
             {channelName}
           </div>
-          <div style={{ fontSize: "12px", color: "var(--text-500)" }}>
+          <div className="text-xs text-gray-400">
             Голосовой канал
           </div>
         </div>
       </div>
 
       {/* Кнопки управления */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+      <div className="flex gap-2 mb-4">
         {!joined ? (
-          <button 
+          <Button 
             onClick={join}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "var(--brand)",
-              border: "none",
-              color: "white",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: "600"
-            }}
+            className="bg-discord-blurple hover:bg-blue-600 font-semibold"
           >
             Присоединиться к голосовому каналу
-          </button>
+          </Button>
         ) : (
           <>
-            <button 
+            <Button 
               onClick={leave}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: "var(--danger)",
-                border: "none",
-                color: "white",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontWeight: "600"
-              }}
+              variant="destructive"
+              className="font-semibold"
             >
               Покинуть канал
-            </button>
+            </Button>
             
-            <button 
+            <Button 
               onClick={toggleMute}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: isMuted ? "var(--danger)" : "var(--bg-600)",
-                border: "1px solid var(--border)",
-                color: "white",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontWeight: "600"
-              }}
+              variant={isMuted ? "destructive" : "outline"}
+              className="font-semibold"
             >
               {isMuted ? "🔇 Размутить" : "🔊 Замутить"}
-            </button>
+            </Button>
             
-            <button 
+            <Button 
               onClick={toggleDeafen}
-              style={{
-                padding: "8px 16px",
-                backgroundColor: isDeafened ? "var(--danger)" : "var(--bg-600)",
-                border: "1px solid var(--border)",
-                color: "white",
-                borderRadius: "6px",
-                cursor: "pointer",
-                fontWeight: "600"
-              }}
+              variant={isDeafened ? "destructive" : "outline"}
+              className="font-semibold"
             >
               {isDeafened ? "🔇 Включить звук" : "🔇 Отключить звук"}
-            </button>
+            </Button>
           </>
         )}
       </div>
 
       {/* Статус подключения */}
       {joined && (
-        <div style={{ 
-          padding: "12px", 
-          backgroundColor: "var(--success)", 
-          color: "white",
-          borderRadius: "6px",
-          marginBottom: "16px",
-          fontSize: "14px"
-        }}>
+        <div className="p-3 bg-green-600 text-white rounded-lg mb-4 text-sm">
           ✅ Подключен к голосовому каналу
         </div>
       )}
 
       {/* Список участников */}
-      <div style={{ flex: 1 }}>
-        <div style={{ 
-          fontWeight: "600", 
-          marginBottom: "8px", 
-          color: "var(--text-100)",
-          fontSize: "14px"
-        }}>
+      <div className="flex-1">
+        <div className="font-semibold mb-2 text-gray-200 text-sm">
           Участники ({peers.length + (joined ? 1 : 0)})
         </div>
         
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div className="flex flex-col gap-2">
           {joined && (
-            <div style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: "8px",
-              padding: "8px",
-              backgroundColor: "var(--bg-700)",
-              borderRadius: "6px"
-            }}>
-              <div style={{ 
-                width: "24px", 
-                height: "24px", 
-                borderRadius: "50%", 
-                backgroundColor: "var(--brand)",
-                display: "grid",
-                placeItems: "center",
-                color: "white",
-                fontSize: "12px"
-              }}>
-                {user.displayName?.slice(0, 2).toUpperCase() || "U"}
-              </div>
-              <span style={{ color: "var(--text-100)", fontSize: "14px" }}>
+            <div className="flex items-center gap-2 p-2 bg-gray-700 rounded-lg">
+              <Avatar className="w-6 h-6">
+                <AvatarFallback className="bg-discord-blurple text-white text-xs">
+                  {user.displayName?.slice(0, 2).toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-gray-200 text-sm">
                 {user.displayName || user.email}
               </span>
-              {isMuted && <span style={{ color: "var(--danger)" }}>🔇</span>}
-              {isDeafened && <span style={{ color: "var(--danger)" }}>🔇</span>}
-              <span style={{ color: "var(--success)" }}>●</span>
+              {isMuted && <span className="text-red-400">🔇</span>}
+              {isDeafened && <span className="text-red-400">🔇</span>}
+              <span className="text-green-400">●</span>
             </div>
           )}
           
           {peers.map((peerId) => (
-            <div key={peerId} style={{ 
-              display: "flex", 
-              alignItems: "center", 
-              gap: "8px",
-              padding: "8px",
-              backgroundColor: "var(--bg-700)",
-              borderRadius: "6px"
-            }}>
-              <div style={{ 
-                width: "24px", 
-                height: "24px", 
-                borderRadius: "50%", 
-                backgroundColor: "var(--bg-600)",
-                display: "grid",
-                placeItems: "center",
-                color: "var(--text-300)",
-                fontSize: "12px"
-              }}>
-                {peerId.slice(0, 2).toUpperCase()}
-              </div>
-              <span style={{ color: "var(--text-300)", fontSize: "14px" }}>
+            <div key={peerId} className="flex items-center gap-2 p-2 bg-gray-700 rounded-lg">
+              <Avatar className="w-6 h-6">
+                <AvatarFallback className="bg-gray-600 text-gray-300 text-xs">
+                  {peerId.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-gray-300 text-sm">
                 {peerId.slice(0, 8)}
               </span>
-              <span style={{ color: "var(--success)" }}>●</span>
+              <span className="text-green-400">●</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Контейнер для аудио элементов */}
-      <div ref={audioContainer} style={{ display: "none" }} />
+      <div ref={audioContainer} className="hidden" />
     </div>
   );
 }

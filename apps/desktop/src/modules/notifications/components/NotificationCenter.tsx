@@ -6,19 +6,10 @@ export function NotificationCenter() {
   if (!user) return null;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="relative">
       {/* Декоративная кнопка уведомлений */}
       <button
-        style={{
-          background: 'none',
-          border: 'none',
-          color: 'var(--text-400)',
-          padding: '8px',
-          borderRadius: '4px',
-          position: 'relative',
-          fontSize: '16px',
-          cursor: 'default'
-        }}
+        className="bg-transparent border-none text-gray-400 p-2 rounded cursor-default text-base"
         title="Уведомления (неактивно)"
       >
         🔔

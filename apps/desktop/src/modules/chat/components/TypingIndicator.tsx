@@ -23,60 +23,13 @@ export function TypingIndicator({ channelId }: TypingIndicatorProps) {
   };
 
   return (
-    <div style={{
-      padding: "8px 16px",
-      color: "var(--text-500)",
-      fontSize: "12px",
-      fontStyle: "italic",
-      display: "flex",
-      alignItems: "center",
-      gap: "8px"
-    }}>
-      <div style={{
-        display: "flex",
-        gap: "2px"
-      }}>
-        <div style={{
-          width: "4px",
-          height: "4px",
-          backgroundColor: "var(--text-500)",
-          borderRadius: "50%",
-          animation: "typing-dot 1.4s infinite ease-in-out"
-        }} />
-        <div style={{
-          width: "4px",
-          height: "4px",
-          backgroundColor: "var(--text-500)",
-          borderRadius: "50%",
-          animation: "typing-dot 1.4s infinite ease-in-out",
-          animationDelay: "0.2s"
-        }} />
-        <div style={{
-          width: "4px",
-          height: "4px",
-          backgroundColor: "var(--text-500)",
-          borderRadius: "50%",
-          animation: "typing-dot 1.4s infinite ease-in-out",
-          animationDelay: "0.4s"
-        }} />
+    <div className="px-4 py-2 text-gray-400 text-xs italic flex items-center gap-2">
+      <div className="flex gap-0.5">
+        <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" />
+        <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+        <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
       </div>
       <span>{formatTypingText(typingUsers)}</span>
     </div>
   );
 }
-
-// Добавляем CSS анимацию для точек
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes typing-dot {
-    0%, 60%, 100% {
-      transform: translateY(0);
-      opacity: 0.4;
-    }
-    30% {
-      transform: translateY(-6px);
-      opacity: 1;
-    }
-  }
-`;
-document.head.appendChild(style);
