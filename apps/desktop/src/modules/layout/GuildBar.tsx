@@ -1,7 +1,7 @@
 import { useAuth } from "../auth/store";
 import { useNavigate } from "react-router-dom";
 import { NotificationCenter } from "../notifications/components/NotificationCenter";
-import { ConnectionStatus } from "../events/components/ConnectionStatus";
+import { CompactConnectionStatus } from "../events/components/CompactConnectionStatus";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -61,7 +61,7 @@ export function GuildBar() {
         
         {/* Connection Status */}
         <div className="flex justify-center">
-          <ConnectionStatus />
+          <CompactConnectionStatus />
         </div>
         
         {/* Logout Button */}

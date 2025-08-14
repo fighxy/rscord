@@ -32,4 +32,13 @@ export async function getChannel(channel_id: string) {
   return res.data;
 }
 
+export async function updateChannel(id: string, name: string) {
+  const res = await httpClient.put<Channel>(`/channels/${id}`, { name });
+  return res.data;
+}
+
+export async function deleteChannel(id: string) {
+  await httpClient.delete(`/channels/${id}`);
+}
+
 

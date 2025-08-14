@@ -12,4 +12,13 @@ export async function createGuild(name: string, owner_id: string) {
   return res.data.guild;
 }
 
+export async function updateGuild(id: string, name: string) {
+  const res = await httpClient.put<Guild>(`/guilds/${id}`, { name });
+  return res.data;
+}
+
+export async function deleteGuild(id: string) {
+  await httpClient.delete(`/guilds/${id}`);
+}
+
 

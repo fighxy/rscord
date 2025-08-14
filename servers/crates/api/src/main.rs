@@ -1,5 +1,7 @@
 mod auth;
 mod events;
+// mod livekit; // Disabled due to compilation issues
+mod livekit_mock;
 use axum::{
     extract::{Path, State},
     http::{header, Method, Request},
@@ -97,6 +99,7 @@ async fn main() {
         .route("/guilds/:guild_id/channels", get(list_channels).post(create_channel))
         .route("/channels/:id", get(get_channel).delete(delete_channel))
         .route("/channels/:id/messages", get(list_messages).post(create_message))
+        .route("/voice/token", get(livekit_mock::get_voice_token_mock))
         .with_state(state)
         .layer(cors);
 

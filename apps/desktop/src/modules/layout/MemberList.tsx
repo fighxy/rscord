@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { DetailedConnectionStatus } from "../events/components/DetailedConnectionStatus";
 
 interface Member {
   id: string;
@@ -98,29 +99,24 @@ export function MemberList({ guildId }: MemberListProps) {
   return (
     <div className="flex flex-col h-full bg-discord-dark">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
-        <h3 className="text-sm font-semibold text-gray-200">Участники ({members.length})</h3>
-        {hasPermission('manage_roles') && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowRoleAssignment(!showRoleAssignment)}
-            className="text-xs bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-300 hover:text-white"
-            title="Нажмите на 'Назначить роль' для управления ролями участников"
-          >
-            Управление ролями
-          </Button>
-        )}
-      </div>
-
-      {/* Search */}
-      <div className="p-3 border-b border-gray-700">
-        <Input
-          placeholder="Поиск участников..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
-        />
+      <div className="px-4 py-3 border-b border-gray-700 bg-discord-dark">
+        <h2 className="text-sm font-semibold text-gray-200 uppercase tracking-wider mb-3">
+          Участники ({members.length})
+        </h2>
+        
+        {/* Connection Status */}
+        <DetailedConnectionStatus />
+        
+        {/* Search */}
+        <div className="mt-3">
+          <Input
+            type="text"
+            placeholder="Поиск участников..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 text-sm"
+          />
+        </div>
       </div>
 
       {/* Members List */}
@@ -143,7 +139,16 @@ export function MemberList({ guildId }: MemberListProps) {
 
               {/* Member Info */}
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-white truncate">{member.display_name}</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-medium text-white truncate">{member.display_name}</div>
+                  {/* Voice status indicators */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-green-400 text-xs">🎤</span> {/* In voice */}
+                    <span className="text-red-400 text-xs">🔇</span> {/* Muted */}
+                    <span className="text-blue-400 text-xs">📹</span> {/* Video on */}
+                    <span className="text-purple-400 text-xs">🖥️</span> {/* Screen sharing */}
+                  </div>
+                </div>
                 <div className="text-xs text-gray-400 truncate">{member.email}</div>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {member.roles.map((role) => (

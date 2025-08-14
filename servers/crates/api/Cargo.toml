@@ -25,5 +25,7 @@ password-hash = "0.5"
 rand_core = "0.6"
 lapin = { version = "2", default-features = false, features = ["native-tls"] }
 headers = "0.4"
+livekit = "0.7.16"
+base64 = "0.22.1"
 
 

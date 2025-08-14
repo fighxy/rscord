@@ -2,6 +2,7 @@ import { MessageList } from "../chat/components/MessageList";
 import { MessageComposer } from "../chat/components/MessageComposer";
 import { TypingIndicator } from "../chat/components/TypingIndicator";
 import { VoiceChannelPane } from "../voice/components/VoiceChannelPane";
+import { SimpleConnectionStatus } from "../events/components/SimpleConnectionStatus";
 import { useQuery } from "@tanstack/react-query";
 import { getChannel } from "../channels/api";
 
@@ -33,25 +34,30 @@ export function ChatPane({ channelId, autoJoinVoice }: ChatPaneProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Chat Header */}
-      <div className="flex items-center px-4 py-3 border-b border-gray-700 bg-discord-dark">
-        {channel ? (
-          <div className="flex items-center">
-            <span className="text-xl mr-2">
-              {isVoiceChannel ? '🎤' : '#'}
-            </span>
-            <span className="text-white font-medium">{channel.name}</span>
-            {isVoiceChannel && (
-              <span className="ml-3 text-xs text-gray-400 font-normal">
-                Голосовой канал
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-discord-dark">
+        <div className="flex items-center">
+          {channel ? (
+            <>
+              <span className="text-xl mr-2">
+                {isVoiceChannel ? '🎤' : '#'}
               </span>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center">
-            <span className="text-xl mr-2">#</span>
-            <span className="text-white font-medium">{channelId.slice(0, 8)}</span>
-          </div>
-        )}
+              <span className="text-white font-medium">{channel.name}</span>
+              {isVoiceChannel && (
+                <span className="ml-3 text-xs text-gray-400 font-normal">
+                  Голосовой канал
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              <span className="text-xl mr-2">#</span>
+              <span className="text-white font-medium">{channelId.slice(0, 8)}</span>
+            </>
+          )}
+        </div>
+        
+        {/* Connection Status */}
+        <SimpleConnectionStatus />
       </div>
       
       {/* Chat Content */}
