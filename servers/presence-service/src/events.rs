@@ -3,7 +3,7 @@
 
 use anyhow::Result;
 use lapin::{
-    options::*, publisher_confirm::Confirmation, types::FieldTable, BasicProperties, Connection,
+    options::*, types::FieldTable, BasicProperties, Connection,
     ConnectionProperties, Channel,
 };
 use serde::{Deserialize, Serialize};
@@ -69,6 +69,7 @@ impl PresenceEventPublisher {
                     auto_delete: false,
                     internal: false,
                     nowait: false,
+                    passive: false,
                 },
                 FieldTable::default(),
             )

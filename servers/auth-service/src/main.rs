@@ -11,7 +11,9 @@ async fn main() {
         .init();
 
     let cfg: AppConfig = load_config("RSCORD").expect("load config");
-    let addr: SocketAddr = "127.0.0.1:14701".parse().expect("bind addr");
+    let bind_address = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let auth_port = std::env::var("AUTH_PORT").unwrap_or_else(|_| "14701".to_string());
+    let addr: SocketAddr = format!("{}:{}", bind_address, auth_port).parse().expect("bind addr");
 
     // Connect to MongoDB
     let mongo_uri = cfg.mongodb_uri.clone().expect("MongoDB URI not configured");

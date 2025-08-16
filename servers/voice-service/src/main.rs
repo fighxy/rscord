@@ -52,7 +52,9 @@ async fn main() {
         .init();
 
     let cfg: AppConfig = load_config("RSCORD").expect("load config");
-    let addr: SocketAddr = "127.0.0.1:14705".parse().expect("bind addr");
+    let bind_address = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let voice_port = std::env::var("VOICE_PORT").unwrap_or_else(|_| "14705".to_string());
+    let addr: SocketAddr = format!("{}:{}", bind_address, voice_port).parse().expect("bind addr");
 
     let cors = CorsLayer::new()
         .allow_origin(Any)

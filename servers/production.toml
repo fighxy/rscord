@@ -1,0 +1,89 @@
+# Production configuration for RSCORD microservices
+# Server: 5.35.83.143
+
+[server]
+host = "0.0.0.0"  # Listen on all interfaces for external access
+gateway_port = 14700
+auth_port = 14701
+chat_port = 14703
+voice_port = 14705
+presence_port = 14706
+
+[database]
+# MongoDB Configuration
+mongodb_url = "mongodb://5.35.83.143:27017"
+mongodb_name = "rscord"
+max_pool_size = 10
+min_pool_size = 2
+
+[cache]
+# Redis Configuration
+redis_url = "redis://5.35.83.143:6379"
+redis_pool_size = 20
+redis_ttl = 3600
+
+[messaging]
+# RabbitMQ Configuration
+rabbitmq_url = "amqp://guest:guest@5.35.83.143:5672"
+rabbitmq_exchange = "rscord_events"
+rabbitmq_prefetch = 10
+
+[auth]
+# JWT Configuration
+jwt_secret = "CHANGE_THIS_IN_PRODUCTION_TO_A_SECURE_SECRET_KEY_2024"
+jwt_expiry = "7d"
+bcrypt_cost = 12
+
+[cors]
+# CORS Configuration for production
+allowed_origins = [
+    "http://5.35.83.143:*",
+    "https://5.35.83.143:*",
+    "http://localhost:*",
+    "tauri://localhost",
+    "http://127.0.0.1:*"
+]
+allowed_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+allowed_headers = ["Content-Type", "Authorization", "X-Requested-With"]
+allow_credentials = true
+
+[voice]
+# WebRTC Configuration
+stun_servers = [
+    "stun:5.35.83.143:3478",
+    "stun:stun.l.google.com:19302",
+    "stun:stun1.l.google.com:19302"
+]
+turn_servers = [
+    { url = "turn:5.35.83.143:3478", username = "rscord", password = "CHANGE_THIS_PASSWORD" }
+]
+ice_gathering_timeout = 5000
+max_participants_per_room = 50
+
+[logging]
+# Logging configuration
+level = "info"
+format = "json"
+output = "stdout"
+log_file = "/var/log/rscord/services.log"
+
+[performance]
+# Performance tuning
+max_connections = 10000
+request_timeout = 30
+keep_alive = 60
+compression = true
+
+[security]
+# Security settings
+rate_limit_per_minute = 60
+max_request_size = "10MB"
+enable_tls = false  # Set to true when you have SSL certificates
+tls_cert = "/etc/rscord/cert.pem"
+tls_key = "/etc/rscord/key.pem"
+
+[monitoring]
+# Monitoring and health checks
+health_check_interval = 30
+metrics_enabled = true
+metrics_port = 9090

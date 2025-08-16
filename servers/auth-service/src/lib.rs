@@ -4,7 +4,7 @@ pub mod app;
 
 use axum::Router;
 use mongodb::Client as MongoClient;
-use rscord_common::AppConfig;
+
 
 #[derive(Clone)]
 pub struct AuthState {

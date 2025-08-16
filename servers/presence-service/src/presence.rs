@@ -5,7 +5,7 @@ use redis::{aio::ConnectionManager, AsyncCommands, Client as RedisClient};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::broadcast;
 use tracing::{error, info, warn};
 use anyhow::Result;
 

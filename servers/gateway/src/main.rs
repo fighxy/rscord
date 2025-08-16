@@ -33,8 +33,11 @@ async fn main() {
 
     let cfg: AppConfig = load_config("RSCORD").expect("load config");
     
-    // Порт для Gateway
-    let addr: SocketAddr = "127.0.0.1:14700"
+    // Читаем конфигурацию из переменной окружения или используем по умолчанию
+    let bind_address = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let gateway_port = std::env::var("GATEWAY_PORT").unwrap_or_else(|_| "14700".to_string());
+    
+    let addr: SocketAddr = format!("{}:{}", bind_address, gateway_port)
         .parse()
         .expect("bind addr");
 

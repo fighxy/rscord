@@ -8,7 +8,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use dashmap::DashMap;
+
 use presence::{PresenceManager, UserPresence, UserStatus};
 use rscord_common::{load_config, AppConfig};
 use serde::{Deserialize, Serialize};
@@ -50,7 +50,9 @@ async fn main() {
         .init();
 
     let cfg: AppConfig = load_config("RSCORD").expect("load config");
-    let addr: SocketAddr = "127.0.0.1:14706".parse().expect("bind addr");
+    let bind_address = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
+    let presence_port = std::env::var("PRESENCE_PORT").unwrap_or_else(|_| "14706".to_string());
+    let addr: SocketAddr = format!("{}:{}", bind_address, presence_port).parse().expect("bind addr");
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
