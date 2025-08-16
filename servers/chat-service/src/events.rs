@@ -1,6 +1,6 @@
 use anyhow::Result;
 use lapin::{
-    options::*, publisher_confirm::Confirmation, types::FieldTable, BasicProperties, Connection,
+    options::*, types::FieldTable, BasicProperties, Connection,
     ConnectionProperties, Channel,
 };
 use rscord_events::ChatEvent;
@@ -45,6 +45,7 @@ impl EventPublisher {
                     auto_delete: false,
                     internal: false,
                     nowait: false,
+                    passive: false,
                 },
                 FieldTable::default(),
             )

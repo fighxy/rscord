@@ -6,9 +6,8 @@ use axum::{
     routing::any,
     Router,
 };
-use http_body_util::{BodyExt, StreamBody, combinators::BoxBody};
-use futures_util::TryStreamExt;
-use bytes::Bytes;
+use http_body_util::BodyExt;
+use hyper::body::Incoming;
 use hyper_util::client::legacy::Client;
 use hyper_util::rt::TokioExecutor;
 use rscord_common::{load_config, AppConfig};
@@ -114,12 +113,17 @@ async fn proxy_handler(
         Ok(response) => {
             let (parts, incoming_body) = response.into_parts();
             
-            // Convert the incoming body to a stream of Bytes
-            let body_stream = incoming_body
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e));
+            // Collect the body to bytes
+            let bytes = incoming_body
+                .collect()
+                .await
+                .map_err(|_| StatusCode::BAD_GATEWAY)?
+                .to_bytes();
             
-            let body = StreamBody::new(body_stream);
-            Ok(Response::from_parts(parts, BoxBody::new(body)))
+            // Create a new body from the bytes
+            let body = Body::from(bytes);
+            
+            Ok(Response::from_parts(parts, body))
         }
         Err(e) => {
             error!("Proxy error: {}", e);

@@ -1,11 +1,11 @@
 use crate::{models::*, ChatState};
 use axum::{
-    extract::{Path, Query, Request, State},
-    http::{header, StatusCode},
+    extract::{Path, Query, State},
+    http::{header, HeaderMap, StatusCode},
     response::Json,
 };
 use mongodb::{bson::doc, Collection};
-use rscord_common::{verify_jwt, User};
+use rscord_common::verify_jwt;
 use rscord_events::ChatEvent;
 use serde_json::Value;
 use tracing::{error, info};
@@ -13,9 +13,9 @@ use tracing::{error, info};
 // Helper function to extract user from JWT
 async fn get_user_from_request(
     state: &ChatState,
-    req: &Request,
+    headers: &HeaderMap,
 ) -> Result<String, StatusCode> {
-    let Some(auth_header) = req.headers().get(header::AUTHORIZATION) else {
+    let Some(auth_header) = headers.get(header::AUTHORIZATION) else {
         return Err(StatusCode::UNAUTHORIZED);
     };
 
@@ -34,16 +34,13 @@ async fn get_user_from_request(
 // Guild handlers
 pub async fn create_guild(
     State(state): State<ChatState>,
-    req: Request,
+    headers: HeaderMap,
+    Json(create_req): Json<CreateGuildRequest>,
 ) -> Result<Json<Guild>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
-    
-    let (parts, body) = req.into_parts();
-    let bytes = axum::body::to_bytes(body, usize::MAX).await.map_err(|_| StatusCode::BAD_REQUEST)?;
-    let create_req: CreateGuildRequest = serde_json::from_slice(&bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
-    let guild = Guild::new(create_req.name, create_req.description, user_id.clone());
-    let member = GuildMember::new(guild.id.clone(), user_id);
+    let guild = Guild::new(create_req.name.clone(), create_req.description, user_id.clone());
+    let member = GuildMember::new(guild.id.clone(), user_id.clone());
 
     // Save guild and member to MongoDB
     let guilds: Collection<Guild> = state.mongo.database("rscord").collection("guilds");
@@ -88,9 +85,9 @@ pub async fn create_guild(
 
 pub async fn get_user_guilds(
     State(state): State<ChatState>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<Vec<Guild>>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
     let guilds: Collection<Guild> = state.mongo.database("rscord").collection("guilds");
@@ -125,13 +122,13 @@ pub async fn get_user_guilds(
 pub async fn get_guild(
     State(state): State<ChatState>,
     Path(guild_id): Path<String>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<GuildResponse>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check if user is member of the guild
     let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
-    let member = members
+    let _member = members
         .find_one(doc! {"guild_id": &guild_id, "user_id": &user_id})
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
@@ -168,9 +165,9 @@ pub async fn get_guild(
 pub async fn get_guild_channels(
     State(state): State<ChatState>,
     Path(guild_id): Path<String>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<Vec<Channel>>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check if user is member of the guild
     let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
@@ -199,9 +196,9 @@ pub async fn get_guild_channels(
 pub async fn get_guild_members(
     State(state): State<ChatState>,
     Path(guild_id): Path<String>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<Vec<GuildMember>>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check if user is member of the guild
     let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
@@ -229,9 +226,9 @@ pub async fn get_guild_members(
 pub async fn join_guild(
     State(state): State<ChatState>,
     Path(guild_id): Path<String>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<Value>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check if guild exists
     let guilds: Collection<Guild> = state.mongo.database("rscord").collection("guilds");
@@ -243,10 +240,11 @@ pub async fn join_guild(
 
     // Check if user is already a member
     let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
-    if let Some(_) = members
+    if members
         .find_one(doc! {"guild_id": &guild_id, "user_id": &user_id})
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .is_some()
     {
         return Err(StatusCode::CONFLICT);
     }
@@ -276,9 +274,9 @@ pub async fn join_guild(
 pub async fn leave_guild(
     State(state): State<ChatState>,
     Path(guild_id): Path<String>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<Value>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Remove user from guild
     let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
@@ -309,13 +307,10 @@ pub async fn leave_guild(
 // Channel handlers
 pub async fn create_channel(
     State(state): State<ChatState>,
-    req: Request,
+    headers: HeaderMap,
+    Json(create_req): Json<CreateChannelRequest>,
 ) -> Result<Json<Channel>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
-
-    let (parts, body) = req.into_parts();
-    let bytes = axum::body::to_bytes(body, usize::MAX).await.map_err(|_| StatusCode::BAD_REQUEST)?;
-    let create_req: CreateChannelRequest = serde_json::from_slice(&bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check if user is member of the guild
     let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
@@ -346,9 +341,9 @@ pub async fn create_channel(
 pub async fn get_channel(
     State(state): State<ChatState>,
     Path(channel_id): Path<String>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<Channel>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Get channel
     let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
@@ -374,9 +369,9 @@ pub async fn get_messages(
     State(state): State<ChatState>,
     Path(channel_id): Path<String>,
     Query(query): Query<GetMessagesQuery>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<Vec<Message>>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check channel access
     let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
@@ -418,13 +413,10 @@ pub async fn get_messages(
 pub async fn create_message(
     State(state): State<ChatState>,
     Path(channel_id): Path<String>,
-    req: Request,
+    headers: HeaderMap,
+    Json(create_req): Json<CreateMessageRequest>,
 ) -> Result<Json<Message>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
-
-    let (parts, body) = req.into_parts();
-    let bytes = axum::body::to_bytes(body, usize::MAX).await.map_err(|_| StatusCode::BAD_REQUEST)?;
-    let create_req: CreateMessageRequest = serde_json::from_slice(&bytes).map_err(|_| StatusCode::BAD_REQUEST)?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check channel access
     let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
@@ -470,9 +462,9 @@ pub async fn create_message(
 pub async fn get_message(
     State(state): State<ChatState>,
     Path(message_id): Path<String>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<Message>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Get message
     let messages: Collection<Message> = state.mongo.database("rscord").collection("messages");
@@ -503,9 +495,9 @@ pub async fn get_message(
 pub async fn delete_message(
     State(state): State<ChatState>,
     Path(message_id): Path<String>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<Value>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Get message
     let messages: Collection<Message> = state.mongo.database("rscord").collection("messages");
@@ -545,9 +537,9 @@ pub async fn delete_message(
 pub async fn typing_indicator(
     State(state): State<ChatState>,
     Path(channel_id): Path<String>,
-    req: Request,
+    headers: HeaderMap,
 ) -> Result<Json<Value>, StatusCode> {
-    let user_id = get_user_from_request(&state, &req).await?;
+    let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check channel access
     let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
