@@ -7,7 +7,6 @@ use axum::{
     Router,
 };
 use http_body_util::BodyExt;
-use hyper::body::Incoming;
 use hyper_util::client::legacy::Client;
 use hyper_util::rt::TokioExecutor;
 use rscord_common::{load_config, AppConfig};
@@ -104,8 +103,8 @@ async fn proxy_handler(
     *req.uri_mut() = uri;
     
     // Прокидываем заголовки аутентификации
-    if let Some(auth_header) = req.headers().get(header::AUTHORIZATION) {
-        req.headers_mut().insert(header::AUTHORIZATION, auth_header.clone());
+    if let Some(auth_header) = req.headers().get(header::AUTHORIZATION).cloned() {
+        req.headers_mut().insert(header::AUTHORIZATION, auth_header);
     }
 
     // Отправляем запрос к целевому сервису
