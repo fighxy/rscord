@@ -4303,6 +4303,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "axum",
+ "bytes",
  "futures-util",
  "headers",
  "http-body-util",

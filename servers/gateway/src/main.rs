@@ -118,8 +118,8 @@ async fn proxy_handler(
             let body_stream = incoming_body
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e));
             
-            let body = Body::from_stream(body_stream);
-            Ok(Response::from_parts(parts, body))
+            let body = StreamBody::new(body_stream);
+            Ok(Response::from_parts(parts, BoxBody::new(body)))
         }
         Err(e) => {
             error!("Proxy error: {}", e);

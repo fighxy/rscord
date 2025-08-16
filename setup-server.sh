@@ -190,7 +190,7 @@ volumes:
   rabbitmq_data:
 EOF
 
-docker-compose -f docker-compose-infra.yml up -d
+docker compose -f docker-compose-infra.yml up -d
 
 # Reload systemd
 echo "🔄 Reloading systemd..."
