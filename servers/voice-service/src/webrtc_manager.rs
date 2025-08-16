@@ -1,8 +1,8 @@
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tokio::sync::{broadcast, RwLock};
-use tracing::{error, info, warn};
+use tokio::sync::broadcast;
+use tracing::{error, info};
 use uuid::Uuid;
 use webrtc::api::APIBuilder;
 use webrtc::ice_transport::ice_server::RTCIceServer;
@@ -140,8 +140,8 @@ impl WebRTCManager {
         self.ice_servers.iter().map(|server| {
             IceServerConfig {
                 urls: server.urls.clone(),
-                username: server.username.clone(),
-                credential: server.credential.clone(),
+                username: Some(server.username.clone()),
+                credential: Some(server.credential.clone()),
             }
         }).collect()
     }
@@ -248,7 +248,14 @@ impl WebRTCManager {
         candidate: webrtc::ice_transport::ice_candidate::RTCIceCandidate,
     ) -> Result<()> {
         if let Some(connection_info) = self.connections.get(connection_id) {
-            connection_info.connection.add_ice_candidate(candidate).await?;
+            // Convert RTCIceCandidate to RTCIceCandidateInit
+            let candidate_init = webrtc::ice_transport::ice_candidate::RTCIceCandidateInit {
+                candidate: candidate.to_string(),
+                sdp_mid: None,
+                sdp_mline_index: None,
+                username_fragment: None,
+            };
+            connection_info.connection.add_ice_candidate(candidate_init).await?;
             info!("Added ICE candidate for connection: {}", connection_id);
             Ok(())
         } else {

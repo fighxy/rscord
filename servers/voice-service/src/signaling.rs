@@ -103,7 +103,7 @@ async fn handle_signaling_message(
             info!("User {} joining room {}", user_id, room_id);
             
             // Notify other participants
-            if let Some(participants) = room_manager.get_room_participants(&room_id).await {
+            if let Some(_participants) = room_manager.get_room_participants(&room_id).await {
                 let join_msg = SignalingMessage::UserJoined {
                     user_id: user_id.clone(),
                     room_id: room_id.clone(),
