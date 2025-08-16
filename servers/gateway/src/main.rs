@@ -6,7 +6,9 @@ use axum::{
     routing::any,
     Router,
 };
-use http_body_util::BodyExt;
+use http_body_util::{BodyExt, StreamBody, combinators::BoxBody};
+use futures_util::TryStreamExt;
+use bytes::Bytes;
 use hyper_util::client::legacy::Client;
 use hyper_util::rt::TokioExecutor;
 use rscord_common::{load_config, AppConfig};
@@ -110,8 +112,13 @@ async fn proxy_handler(
     // Отправляем запрос к целевому сервису
     match state.client.request(req).await {
         Ok(response) => {
-            let (parts, body) = response.into_parts();
-            let body = Body::from_stream(body);
+            let (parts, incoming_body) = response.into_parts();
+            
+            // Convert the incoming body to a stream of Bytes
+            let body_stream = incoming_body
+                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e));
+            
+            let body = Body::from_stream(body_stream);
             Ok(Response::from_parts(parts, body))
         }
         Err(e) => {
