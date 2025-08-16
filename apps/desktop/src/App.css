@@ -4,8 +4,59 @@
 @custom-variant dark (&:is(.dark *));
 
 @tailwind base;
-@tailwind components;
+@tailwind components; 
 @tailwind utilities;
+
+/* Discord Theme Variables */
+:root {
+  /* Discord colors */
+  --bg-900: #111214;
+  --bg-800: #1b1d20;
+  --bg-700: #23262a;
+  --bg-600: #2b2f34;
+  --text-100: #eef0f3;
+  --text-300: #c7cbd2;
+  --text-500: #9aa0aa;
+  --brand: #5865f2;
+  --success: #3ba55d;
+  --danger: #ed4245;
+  --warning: #f0b232;
+  --border: #2f3338;
+  --border-200: #40444b;
+}
+
+/* Base styles */
+html, body, #root { 
+  height: 100%; 
+  margin: 0;
+  background: var(--bg-900); 
+  color: var(--text-100); 
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+/* Layout components */
+.app-shell { 
+  display: grid; 
+  grid-template-columns: 72px 280px 1fr 280px; 
+  height: 100vh; 
+}
+
+/* Hide scrollbars */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
+/* Allow text selection in inputs */
+input, textarea {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
 
 /* Custom Discord-like styles */
 @layer components {
@@ -13,32 +64,18 @@
     @apply bg-discord-blurple hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200;
   }
 
-  .btn-secondary {
-    @apply bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200;
-  }
-
-  .btn-danger {
-    @apply bg-discord-red hover:bg-red-600 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200;
-  }
-
   .input-field {
     @apply bg-gray-700 border border-gray-600 text-white placeholder-gray-400 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-discord-blurple focus:border-transparent;
   }
+}
 
-  .card {
-    @apply bg-gray-800 rounded-lg shadow-lg border border-gray-700;
+/* Responsive design */
+@media (max-width: 768px) {
+  .app-shell {
+    grid-template-columns: 60px 1fr;
   }
-
-  .sidebar {
-    @apply bg-gray-900 border-r border-gray-700;
-  }
-
-  .channel-item {
-    @apply px-3 py-2 rounded-md hover:bg-gray-700 cursor-pointer transition-colors duration-150;
-  }
-
-  .channel-item.active {
-    @apply bg-gray-700 text-white;
+  .sidebar, .members {
+    display: none;
   }
 }
 

@@ -9,6 +9,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 use std::time::{SystemTime, UNIX_EPOCH};
+use base64::Engine;
 
 use crate::AppState;
 
@@ -69,18 +70,16 @@ fn generate_mock_jwt_token(user_id: &str, room_name: &str) -> String {
         .unwrap()
         .as_secs();
     
-    let header = base64::encode_config(
-        r#"{"alg":"HS256","typ":"JWT"}"#,
-        base64::URL_SAFE_NO_PAD
+    let header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(
+        r#"{"alg":"HS256","typ":"JWT"}"#
     );
     
-    let payload = base64::encode_config(
+    let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(
         &format!(r#"{{"iss":"devkey","sub":"{}","aud":"{}","exp":{},"nbf":{},"iat":{},"jti":"mock-token","video":{{"room":"{}","roomJoin":true,"canPublish":true,"canSubscribe":true}}}}"#, 
-            user_id, user_id, now + 86400, now, now, room_name),
-        base64::URL_SAFE_NO_PAD
+            user_id, user_id, now + 86400, now, now, room_name)
     );
     
-    let signature = base64::encode_config("mock-signature", base64::URL_SAFE_NO_PAD);
+    let signature = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode("mock-signature");
     
     format!("{}.{}.{}", header, payload, signature)
 }

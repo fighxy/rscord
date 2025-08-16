@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@shadcn/ui": "^0.0.4",
-    "@tailwindcss/postcss": "^4.1.11",
+    "@tailwindcss/postcss": "^4.1.12",
     "@tauri-apps/cli": "^2",
     "@types/node": "^24.2.1",
     "@types/react": "^19.1.8",

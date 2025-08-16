@@ -1,4 +1,5 @@
 import httpClient from "../../shared/api/http";
+import { AxiosProgressEvent } from "axios";
 
 export interface UploadedFile {
   id: string;
@@ -34,7 +35,7 @@ export async function uploadFile(
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        onUploadProgress: (progressEvent: any) => {
+        onUploadProgress: (progressEvent: AxiosProgressEvent) => {
           if (progressEvent.total) {
             const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             onProgress?.(progress);

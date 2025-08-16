@@ -40,7 +40,7 @@ async fn ws_handler(Query(q): Query<WsQuery>, ws: WebSocketUpgrade) -> impl Into
 async fn handle_ws(mut socket: WebSocket) {
     // Connect to RabbitMQ and bind a temporary queue for this connection
     let cfg = load_config("RSCORD").expect("cfg");
-    let conn = Connection::connect(&cfg.rabbitmq_uri.unwrap(), ConnectionProperties::default())
+    let conn = Connection::connect(&cfg.rabbitmq_uri.expect("RabbitMQ URI not configured"), ConnectionProperties::default())
         .await
         .expect("amqp");
     let channel = conn.create_channel().await.expect("ch");

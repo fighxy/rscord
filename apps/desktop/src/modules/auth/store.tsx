@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { createContext, useContext, useEffect } from "react";
 
-type AuthState = {
+interface AuthState {
   token: string | null;
   user: {
     id: string;
@@ -13,9 +14,10 @@ type AuthState = {
   setUser: (user: { id: string; email: string; displayName: string } | null) => void;
   logout: () => void;
   checkAuth: () => boolean;
-};
+  initialize: () => void;
+}
 
-export const useAuth = create<AuthState>()(
+const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       token: null,
@@ -41,6 +43,12 @@ export const useAuth = create<AuthState>()(
         set({ isAuthenticated: isAuth });
         return isAuth;
       },
+      initialize: () => {
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+          set({ token, isAuthenticated: true });
+        }
+      },
     }),
     {
       name: 'auth-storage',
@@ -48,5 +56,32 @@ export const useAuth = create<AuthState>()(
     }
   )
 );
+
+// Context для провайдера
+const AuthContext = createContext<AuthState | undefined>(undefined);
+
+// Provider компонент
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const auth = useAuthStore();
+  
+  useEffect(() => {
+    auth.initialize();
+  }, [auth]);
+
+  return (
+    <AuthContext.Provider value={auth}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// Hook для использования аутентификации
+export function useAuth(): AuthState {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+}
 
 

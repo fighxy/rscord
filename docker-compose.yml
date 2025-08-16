@@ -1,25 +1,61 @@
 version: "3.9"
 services:
+  # MongoDB - основная база данных
   mongo:
     image: mongo:7
+    container_name: rscord-mongo
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=rscord
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # Redis - для кэширования и LiveKit
   redis:
-    image: redis:7
+    image: redis:7-alpine
+    container_name: rscord-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # RabbitMQ - для событий и очередей
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3-management-alpine
+    container_name: rscord-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+      - RABBITMQ_DEFAULT_VHOST=/
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # MinIO - для хранения файлов
   minio:
     image: minio/minio:latest
+    container_name: rscord-minio
     environment:
       - MINIO_ROOT_USER=minioadmin
       - MINIO_ROOT_PASSWORD=minioadmin
@@ -29,15 +65,17 @@ services:
       - "9001:9001"
     volumes:
       - minio_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  maildev:
-    image: maildev/maildev:latest
-    ports:
-      - "14080:1080"
-      - "14025:1025"
-
+  # LiveKit - для WebRTC и голосовой связи
   livekit:
     image: livekit/livekit-server:latest
+    container_name: rscord-livekit
     command: --config /etc/livekit.yaml
     restart: unless-stopped
     ports:
@@ -45,14 +83,39 @@ services:
       - "7881:7881"
       - "7882:7882/udp"
     environment:
-      - LIVEKIT_KEYS=devkey: devsecret
+      - LIVEKIT_KEYS=devkey:devsecret
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7880/twirp/livekit.HealthService/HealthCheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MailDev - для тестирования email (опционально)
+  maildev:
+    image: maildev/maildev:latest
+    container_name: rscord-maildev
+    ports:
+      - "14080:1080"
+      - "14025:1025"
+    restart: unless-stopped
 
 volumes:
   mongo_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
   minio_data:
+    driver: local
+
+networks:
+  default:
+    name: rscord-network
 
 

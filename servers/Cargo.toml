@@ -1,5 +1,10 @@
 [workspace]
 members = [
+  "gateway",
+  "auth-service",
+  "chat-service",
+  "voice-service",
+  "presence-service",
   "signaling",
   "crates/common",
   "crates/api",

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createGuild, listGuilds, updateGuild, deleteGuild } from "../api";
+import { createGuild, listGuilds, updateGuild, deleteGuild, Guild } from "../api";
 import { useState } from "react";
 import { useAuth } from "../../auth/store";
 import { Button } from "@/components/ui/button";

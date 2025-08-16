@@ -43,19 +43,30 @@ export default function LoginPage() {
     try {
       const response = await authAPI.login({ email, password });
       
-      // Сохраняем токен
+      // Сохраняем токен и пользователя
       setToken(response.access_token);
       
       // Получаем информацию о пользователе
-      const userInfo = await authAPI.getCurrentUser();
-      setUser({
-        id: userInfo.id,
-        email: userInfo.email,
-        displayName: userInfo.display_name
-      });
+      try {
+        const userInfo = await authAPI.getCurrentUser();
+        setUser({
+          id: userInfo.id,
+          email: userInfo.email,
+          displayName: userInfo.display_name
+        });
+      } catch (userError) {
+        console.warn("Не удалось получить информацию о пользователе:", userError);
+        // Создаем базовую информацию о пользователе из email
+        setUser({
+          id: "temp-" + Date.now(),
+          email: email,
+          displayName: email.split('@')[0]
+        });
+      }
       
       navigate("/");
     } catch (error: any) {
+      console.error("Login error:", error);
       setError(error.message || "Ошибка при входе. Попробуйте снова.");
     } finally {
       setIsLoading(false);

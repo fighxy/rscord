@@ -42,8 +42,8 @@ async fn main() {
         .allow_headers(Any);
 
     // Connect to MongoDB
-    let mongo_uri = cfg.mongodb_uri.clone().unwrap();
-    let mongo = Client::with_uri_str(mongo_uri).await.expect("mongo");
+    let mongo_uri = cfg.mongodb_uri.clone().expect("MongoDB URI not configured");
+    let mongo = Client::with_uri_str(mongo_uri).await.expect("Failed to connect to MongoDB");
     
     // Connect to EventBus (RabbitMQ) - handle connection failure gracefully
     let bus = match cfg.rabbitmq_uri.as_ref() {
@@ -66,7 +66,7 @@ async fn main() {
         }
     };
     
-    let state = AppState::new(mongo, cfg.jwt_secret.clone().unwrap(), bus.clone());
+    let state = AppState::new(mongo, cfg.jwt_secret.clone().expect("JWT secret not configured"), bus.clone());
     
     // Log EventBus connection status
     if bus.is_connected() {
@@ -109,15 +109,16 @@ async fn main() {
 }
 
 #[axum::debug_handler]
-async fn list_guilds(State(state): State<AppState>) -> Json<Vec<GuildModel>> {
-    let mut cursor = state.guilds().find(doc!{}).await.unwrap();
+async fn list_guilds(State(state): State<AppState>) -> Result<Json<Vec<GuildModel>>, axum::http::StatusCode> {
+    let mut cursor = state.guilds().find(doc!{}).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
     let mut res = Vec::new();
     while let Some(Ok(doc)) = cursor.next().await {
         if let (Ok(id), Ok(owner_id)) = (Ulid::from_string(&doc.id), Ulid::from_string(&doc.owner_id)) {
             res.push(GuildModel { id: Id(id), name: doc.name, owner_id: Id(owner_id), created_at: doc.created_at });
         }
     }
-    Json(res)
+    Ok(Json(res))
 }
 
 
@@ -186,17 +187,19 @@ struct CreateGuildRequest { name: String, owner_id: String }
 struct GuildResponse { guild: GuildModel }
 
 #[axum::debug_handler]
-async fn create_guild(State(state): State<AppState>, Json(body): Json<CreateGuildRequest>) -> Json<GuildResponse> {
+async fn create_guild(State(state): State<AppState>, Json(body): Json<CreateGuildRequest>) -> Result<Json<GuildResponse>, axum::http::StatusCode> {
     let guild = GuildModel { id: Id(Ulid::new()), name: body.name, owner_id: Id(Ulid::from_string(&body.owner_id).unwrap_or_else(|_| Ulid::new())), created_at: Utc::now() };
     let doc = GuildDoc { id: guild.id.0.to_string(), name: guild.name.clone(), owner_id: guild.owner_id.0.to_string(), created_at: guild.created_at };
-    let _ = state.guilds().insert_one(doc).await;
+    state.guilds().insert_one(doc).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
     let _ = state.bus.publish(&format!("guild.{}.created", guild.id.0), &guild).await;
-    Json(GuildResponse { guild })
+    Ok(Json(GuildResponse { guild }))
 }
 
 #[axum::debug_handler]
 async fn get_guild(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<GuildResponse>, axum::http::StatusCode> {
-    let doc = state.guilds().find_one(doc!{"_id": id.clone()}).await.ok().flatten()
+    let doc = state.guilds().find_one(doc!{"_id": id.clone()}).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(axum::http::StatusCode::NOT_FOUND)?;
     let guild = GuildModel { 
         id: Id(Ulid::from_string(&doc.id).map_err(|_| axum::http::StatusCode::BAD_REQUEST)?), 
@@ -213,8 +216,8 @@ struct UpdateGuildRequest { name: Option<String> }
 #[allow(dead_code)]
 async fn update_guild(State(state): State<AppState>, Path(id): Path<String>, Json(body): Json<UpdateGuildRequest>) -> Result<Json<GuildResponse>, axum::http::StatusCode> {
     if let Some(name) = body.name {
-        let _ = state.guilds().update_one(doc!{"_id": &id}, doc!{"$set": {"name": name.clone()}}).await.ok()
-            .ok_or(axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
+        state.guilds().update_one(doc!{"_id": &id}, doc!{"$set": {"name": name.clone()}}).await
+            .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
     }
     let res = get_guild(State(state.clone()), Path(id.clone())).await?;
     let Json(GuildResponse { guild }) = &res;
@@ -222,10 +225,11 @@ async fn update_guild(State(state): State<AppState>, Path(id): Path<String>, Jso
     Ok(res)
 }
 
-async fn delete_guild(State(state): State<AppState>, Path(id): Path<String>) -> Json<serde_json::Value> {
-    let _ = state.guilds().delete_one(doc!{"_id": id.clone()}).await;
+async fn delete_guild(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<serde_json::Value>, axum::http::StatusCode> {
+    state.guilds().delete_one(doc!{"_id": id.clone()}).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
     let _ = state.bus.publish(&format!("guild.{}.deleted", id), &serde_json::json!({"id": id})).await;
-    Json(serde_json::json!({"ok": true}))
+    Ok(Json(serde_json::json!({"ok": true})))
 }
 
 #[derive(Deserialize)]
@@ -237,7 +241,7 @@ struct CreateChannelRequest {
 #[derive(Serialize)]
 struct ChannelResponse { channel: ChannelModel }
 
-async fn create_channel(State(state): State<AppState>, Json(body): Json<CreateChannelRequest>) -> Json<ChannelResponse> {
+async fn create_channel(State(state): State<AppState>, Json(body): Json<CreateChannelRequest>) -> Result<Json<ChannelResponse>, axum::http::StatusCode> {
     let channel_type = body.channel_type.unwrap_or_else(|| "text".to_string());
     let channel = ChannelModel { 
         id: Id(Ulid::new()), 
@@ -253,26 +257,29 @@ async fn create_channel(State(state): State<AppState>, Json(body): Json<CreateCh
         channel_type,
         created_at: channel.created_at 
     };
-    let _ = state.channels().insert_one(doc).await;
+    state.channels().insert_one(doc).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
     let _ = state.bus.publish(&format!("channel.{}.created", channel.id.0), &channel).await;
-    Json(ChannelResponse { channel })
+    Ok(Json(ChannelResponse { channel }))
 }
 
-async fn list_channels(State(state): State<AppState>, Path(guild_id): Path<String>) -> Json<Vec<ChannelModel>> {
+async fn list_channels(State(state): State<AppState>, Path(guild_id): Path<String>) -> Result<Json<Vec<ChannelModel>>, axum::http::StatusCode> {
     let filter = doc! {"guild_id": &guild_id};
-    let mut cursor = state.channels().find(filter).await.unwrap();
+    let mut cursor = state.channels().find(filter).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
     let mut res = Vec::new();
     while let Some(Ok(doc)) = cursor.next().await {
         if let (Ok(id), Ok(gid)) = (Ulid::from_string(&doc.id), Ulid::from_string(&doc.guild_id)) {
             res.push(ChannelModel { id: Id(id), guild_id: Id(gid), name: doc.name, channel_type: doc.channel_type, created_at: doc.created_at });
         }
     }
-    Json(res)
+    Ok(Json(res))
 }
 
 #[axum::debug_handler]
 async fn get_channel(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<ChannelResponse>, axum::http::StatusCode> {
-    let doc = state.channels().find_one(doc!{"_id": id.clone()}).await.ok().flatten()
+    let doc = state.channels().find_one(doc!{"_id": id.clone()}).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(axum::http::StatusCode::NOT_FOUND)?;
     let channel = ChannelModel { 
         id: Id(Ulid::from_string(&doc.id).map_err(|_| axum::http::StatusCode::BAD_REQUEST)?), 
@@ -291,8 +298,8 @@ struct UpdateChannelRequest { name: Option<String> }
 #[axum::debug_handler]
 async fn update_channel(State(state): State<AppState>, Path(id): Path<String>, Json(body): Json<UpdateChannelRequest>) -> Result<Json<ChannelResponse>, axum::http::StatusCode> {
     if let Some(name) = body.name {
-        let _ = state.channels().update_one(doc!{"_id": &id}, doc!{"$set": {"name": name.clone()}}).await.ok()
-            .ok_or(axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
+        state.channels().update_one(doc!{"_id": &id}, doc!{"$set": {"name": name.clone()}}).await
+            .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
     }
     let res = get_channel(State(state.clone()), Path(id.clone())).await?;
     let Json(ChannelResponse { channel }) = &res;
@@ -300,10 +307,11 @@ async fn update_channel(State(state): State<AppState>, Path(id): Path<String>, J
     Ok(res)
 }
 
-async fn delete_channel(State(state): State<AppState>, Path(id): Path<String>) -> Json<serde_json::Value> {
-    let _ = state.channels().delete_one(doc!{"_id": id.clone()}).await;
+async fn delete_channel(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<serde_json::Value>, axum::http::StatusCode> {
+    state.channels().delete_one(doc!{"_id": id.clone()}).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
     let _ = state.bus.publish(&format!("channel.{}.deleted", id), &serde_json::json!({"id": id})).await;
-    Json(serde_json::json!({"ok": true}))
+    Ok(Json(serde_json::json!({"ok": true})))
 }
 
 #[derive(Deserialize)]
@@ -311,11 +319,12 @@ struct CreateMessageRequest { author_id: String, content: String }
 #[derive(Serialize)]
 struct MessageResponse { message: serde_json::Value }
 
-async fn create_message(State(state): State<AppState>, Path(channel_id): Path<String>, Json(body): Json<CreateMessageRequest>) -> Json<MessageResponse> {
+async fn create_message(State(state): State<AppState>, Path(channel_id): Path<String>, Json(body): Json<CreateMessageRequest>) -> Result<Json<MessageResponse>, axum::http::StatusCode> {
     let id = Ulid::new();
     let now = Utc::now();
     let doc = MessageDoc { id: id.to_string(), channel_id: channel_id.clone(), author_id: body.author_id, content: body.content, created_at: now };
-    let _ = state.messages().insert_one(doc.clone()).await;
+    state.messages().insert_one(doc.clone()).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
     let payload = serde_json::json!({
         "id": doc.id,
         "channel_id": doc.channel_id,
@@ -324,12 +333,13 @@ async fn create_message(State(state): State<AppState>, Path(channel_id): Path<St
         "created_at": doc.created_at,
     });
     let _ = state.bus.publish(&format!("channel.{}.message_created", channel_id), &payload).await;
-    Json(MessageResponse { message: payload })
+    Ok(Json(MessageResponse { message: payload }))
 }
 
-async fn list_messages(State(state): State<AppState>, Path(channel_id): Path<String>) -> Json<Vec<serde_json::Value>> {
+async fn list_messages(State(state): State<AppState>, Path(channel_id): Path<String>) -> Result<Json<Vec<serde_json::Value>>, axum::http::StatusCode> {
     let filter = doc! {"channel_id": &channel_id};
-    let mut cursor = state.messages().find(filter).await.unwrap();
+    let mut cursor = state.messages().find(filter).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
     let mut res = Vec::new();
     while let Some(Ok(doc)) = cursor.next().await {
         res.push(serde_json::json!({
@@ -340,7 +350,7 @@ async fn list_messages(State(state): State<AppState>, Path(channel_id): Path<Str
             "created_at": doc.created_at,
         }));
     }
-    Json(res)
+    Ok(Json(res))
 }
 
 async fn register(State(state): State<AppState>, Json(body): Json<RegisterRequest>) -> Result<Json<RegisterResponse>, axum::http::StatusCode> {
@@ -386,9 +396,8 @@ async fn register(State(state): State<AppState>, Json(body): Json<RegisterReques
         created_at: user.created_at,
     };
     
-    if let Err(_) = state.users().insert_one(doc).await {
-        return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR);
-    }
+    state.users().insert_one(doc).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(RegisterResponse { user }))
 }
@@ -413,9 +422,9 @@ async fn get_current_user(State(state): State<AppState>, req: Request<axum::body
     // Получаем пользователя из базы данных
     let users: Collection<UserDoc> = state.users();
     let filter = doc! {"_id": &claims.sub};
-    let Some(user_doc) = users.find_one(filter).await.map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)? else { 
-        return Err(axum::http::StatusCode::NOT_FOUND) 
-    };
+    let user_doc = users.find_one(filter).await
+        .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(axum::http::StatusCode::NOT_FOUND)?;
     
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| axum::http::StatusCode::BAD_REQUEST)?),

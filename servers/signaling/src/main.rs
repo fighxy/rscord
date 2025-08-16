@@ -95,7 +95,9 @@ async fn handle_socket(state: AppState, mut socket: WebSocket) {
                     Some(Ok(msg)) => {
                         if let Err(err) = on_ws_message(&state, &mut joined_room, &mut peer_id, &mut room_rx, msg, &mut socket).await {
                             error!(?err, "error handling ws message");
-                            let _ = socket.send(Message::Text(serde_json::to_string(&ServerMessage::Error { message: err.to_string() }).unwrap())).await;
+                            if let Ok(text) = serde_json::to_string(&ServerMessage::Error { message: err.to_string() }) {
+        let _ = socket.send(Message::Text(text)).await;
+    }
                         }
                     }
                     Some(Err(e)) => {

@@ -95,3 +95,34 @@ body { margin: 0; background: var(--bg-900); color: var(--text-100); font-family
 }
 
 
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .guild-bar {
+    width: 60px;
+  }
+  .sidebar {
+    display: none; /* Hide sidebar on mobile */
+  }
+  .chat {
+    flex: 1;
+  }
+  .members {
+    display: none; /* Hide members list on mobile */
+  }
+}
+
+/* Scrollbar styles to improve appearance */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-secondary);
+  border-radius: 4px;
+}
+
+/* Allow text selection in inputs */
+input, textarea {
+  user-select: text !important;
+}
+
+

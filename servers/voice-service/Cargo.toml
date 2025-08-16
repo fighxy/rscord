@@ -1,0 +1,27 @@
+[package]
+name = "rscord-voice-service"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.7", features = ["macros", "ws"] }
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
+rscord-common = { path = "../crates/common" }
+rscord-events = { path = "../crates/events" }
+tower = { version = "0.5", features = ["timeout", "limit"] }
+tower-http = { version = "0.5", features = ["trace", "cors"] }
+futures-util = "0.3"
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+ulid = { version = "1", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+dashmap = "5.5"
+webrtc = "0.9"
+tokio-tungstenite = "0.21"
+lapin = { version = "2", default-features = false, features = ["native-tls"] }
+livekit = "0.7"
+livekit-api = "0.4"

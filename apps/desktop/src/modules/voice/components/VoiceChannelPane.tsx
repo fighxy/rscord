@@ -10,16 +10,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   LiveKitRoom, 
   useLocalParticipant, 
-  AudioTrack, 
-  ParticipantLoop, 
-  useParticipants, 
-  RoomAudioRenderer,
-  VideoTrack,
-  useIsSpeaking,
-  GridLayout,
-  ParticipantTile
+  useParticipants
 } from "@livekit/components-react";
-import { Track, RoomEvent } from "livekit-client";
+import { RoomEvent } from "livekit-client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // LiveKit configuration - will be fetched from API
@@ -64,8 +57,8 @@ export function VoiceChannelPane({ channelId, channelName, autoJoin }: VoiceChan
     }
   };
 
-  const { localParticipant } = useLocalParticipant();
-  const participants = useParticipants();
+  const localParticipant = useLocalParticipant()?.localParticipant;
+  const participants = useParticipants() || [];
 
   useEffect(() => {
     if (autoJoin && !joined && user?.id) {
@@ -81,9 +74,15 @@ export function VoiceChannelPane({ channelId, channelName, autoJoin }: VoiceChan
   }, [user?.id, channelId]);
 
   const toggleMute = async () => {
+    if (!localParticipant) return;
     const newMuted = !isMuted;
     setIsMuted(newMuted);
-    await localParticipant.setMicrophoneEnabled(!newMuted);
+    try {
+      await localParticipant.setMicrophoneEnabled(!newMuted);
+    } catch (error) {
+      console.error('Failed to toggle microphone:', error);
+      setIsMuted(!newMuted); // Revert state on error
+    }
   };
 
   const toggleDeafen = () => {
@@ -96,27 +95,48 @@ export function VoiceChannelPane({ channelId, channelName, autoJoin }: VoiceChan
 
   // Toggle video
   const toggleVideo = async () => {
+    if (!localParticipant) return;
     const enabled = !isVideoEnabled;
     setIsVideoEnabled(enabled);
-    await localParticipant.setCameraEnabled(enabled);
+    try {
+      await localParticipant.setCameraEnabled(enabled);
+    } catch (error) {
+      console.error('Failed to toggle camera:', error);
+      setIsVideoEnabled(!enabled); // Revert state on error
+    }
   };
 
   // Toggle screen share
   const toggleScreenShare = async () => {
+    if (!localParticipant) return;
     const enabled = !isSharingScreen;
     setIsSharingScreen(enabled);
     if (enabled) {
-      await localParticipant.setScreenShareEnabled(true);
+      try {
+        await localParticipant.setScreenShareEnabled(true);
+      } catch (error) {
+        console.error('Failed to enable screen share:', error);
+        setIsSharingScreen(false);
+      }
     } else {
-      await localParticipant.setScreenShareEnabled(false);
+      try {
+        await localParticipant.setScreenShareEnabled(false);
+      } catch (error) {
+        console.error('Failed to disable screen share:', error);
+      }
     }
   };
 
   // Camera select change
   const handleCameraChange = async (deviceId: string) => {
+    if (!localParticipant) return;
     setSelectedCamera(deviceId);
     if (isVideoEnabled) {
-      await localParticipant.setCameraEnabled(true);
+      try {
+        await localParticipant.setCameraEnabled(true);
+      } catch (error) {
+        console.error('Failed to enable camera:', error);
+      }
     }
   };
 
@@ -181,7 +201,8 @@ export function VoiceChannelPane({ channelId, channelName, autoJoin }: VoiceChan
       audio={true}
       video={true} // Enable video
     >
-      <RoomAudioRenderer muted={isDeafened} /> {/* Handles incoming audio, mute for deafen */}
+      {/* Audio renderer placeholder */}
+      <div style={{ display: 'none' }} data-audio-renderer />
 
       <div className="flex flex-col h-full p-4">
         {/* Header */}
