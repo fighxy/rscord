@@ -51,23 +51,33 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(|| async { "Chat service is healthy" }))
-        // Guild routes
-        .route("/guilds", post(handlers::create_guild))
-        .route("/guilds", get(handlers::get_user_guilds))
-        .route("/guilds/:guild_id", get(handlers::get_guild))
-        .route("/guilds/:guild_id/channels", get(handlers::get_guild_channels))
-        .route("/guilds/:guild_id/members", get(handlers::get_guild_members))
-        .route("/guilds/:guild_id/join", post(handlers::join_guild))
-        .route("/guilds/:guild_id/leave", post(handlers::leave_guild))
+        // Guild/Server routes
+        .route("/api/servers", post(handlers::create_guild))
+        .route("/api/servers", get(handlers::get_user_guilds))
+        .route("/api/servers/:guild_id", get(handlers::get_guild))
+        .route("/api/servers/:guild_id/channels", get(handlers::get_guild_channels))
+        .route("/api/servers/:guild_id/members", get(handlers::get_guild_members))
+        .route("/api/servers/:guild_id/join", post(handlers::join_guild))
+        .route("/api/servers/:guild_id/leave", post(handlers::leave_guild))
         // Channel routes
-        .route("/channels", post(handlers::create_channel))
-        .route("/channels/:channel_id", get(handlers::get_channel))
-        .route("/channels/:channel_id/messages", get(handlers::get_messages))
-        .route("/channels/:channel_id/messages", post(handlers::create_message))
-        .route("/channels/:channel_id/typing", post(handlers::typing_indicator))
+        .route("/api/servers/:guild_id/channels", post(handlers::create_channel))
+        .route("/api/channels/:channel_id", get(handlers::get_channel))
+        .route("/api/channels/:channel_id/messages", get(handlers::get_messages))
+        .route("/api/channels/:channel_id/messages", post(handlers::create_message))
+        .route("/api/channels/:channel_id/typing", post(handlers::typing_indicator))
         // Message routes
-        .route("/messages/:message_id", get(handlers::get_message))
-        .route("/messages/:message_id", axum::routing::delete(handlers::delete_message))
+        .route("/api/channels/:channel_id/messages/:message_id", get(handlers::get_message))
+        .route("/api/channels/:channel_id/messages/:message_id", axum::routing::delete(handlers::delete_message))
+        // User routes
+        .route("/api/users/profile", get(handlers::get_user_profile))
+        .route("/api/users/update", post(handlers::update_user_profile))
+        .route("/api/users/avatar", post(handlers::update_user_avatar))
+        .route("/api/users/status", post(handlers::update_user_status))
+        .route("/api/users/settings", post(handlers::update_user_settings))
+        // File routes
+        .route("/api/files/upload", post(handlers::upload_file))
+        .route("/api/files/:file_id", get(handlers::get_file))
+        .route("/api/files/:file_id", axum::routing::delete(handlers::delete_file))
         .with_state(state)
         .layer(cors);
 

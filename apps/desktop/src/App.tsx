@@ -6,21 +6,15 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
 // Context Providers
-import { AuthProvider } from './contexts/AuthContext';
-import { WebSocketProvider } from './contexts/WebSocketContext';
+import { AuthProvider } from './modules/auth/store';
 import { ThemeProvider } from './contexts/ThemeContext';
 
 // Pages
-import Login from './pages/Login';
-import Register from './pages/Register';
-import MainApp from './pages/MainApp';
-
-// Components
-import ProtectedRoute from './components/ProtectedRoute';
-import LoadingScreen from './components/LoadingScreen';
+import LoginPage from './modules/auth/pages/LoginPage';
+import RegisterPage from './modules/auth/pages/RegisterPage';
+import HomePage from './modules/home/HomePage';
 
 // API Configuration
-import { setupAxiosInterceptors } from './services/api';
 import { API_CONFIG } from './config/api';
 
 // Glassmorphism styles
@@ -30,7 +24,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000,
-      cacheTime: 10 * 60 * 1000,
+      gcTime: 10 * 60 * 1000, // Исправлено: cacheTime -> gcTime
       retry: 3,
       refetchOnWindowFocus: false,
     },
@@ -65,9 +59,6 @@ function App() {
       };
     };
 
-    // Setup API interceptors
-    setupAxiosInterceptors();
-    
     // Check server connection
     const checkConnection = async () => {
       try {
@@ -98,7 +89,14 @@ function App() {
   }, []);
 
   if (!isInitialized) {
-    return <LoadingScreen />;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-discord-dark">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-discord-blurple mx-auto mb-4"></div>
+          <p className="text-white text-lg">Инициализация...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -106,62 +104,25 @@ function App() {
       <ThemeProvider>
         <AuthProvider>
           <Router>
-            <WebSocketProvider>
-              <div className="app-container glassmorphism">
-                {/* Background orbs for glassmorphism effect */}
-                <div className="bg-orb orb-1"></div>
-                <div className="bg-orb orb-2"></div>
-                <div className="bg-orb orb-3"></div>
-                
-                {/* Server status indicator */}
-                {serverStatus === 'error' && (
-                  <div className="server-status-banner">
-                    <span className="status-icon">⚠️</span>
-                    <span>Connecting to server...</span>
-                  </div>
-                )}
-
-                <Routes>
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route
-                    path="/app/*"
-                    element={
-                      <ProtectedRoute>
-                        <MainApp />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route path="/" element={<Navigate to="/app" replace />} />
-                </Routes>
-
-                <Toaster
-                  position="bottom-right"
-                  toastOptions={{
-                    style: {
-                      background: 'rgba(148, 163, 184, 0.1)',
-                      backdropFilter: 'blur(10px)',
-                      WebkitBackdropFilter: 'blur(10px)',
-                      color: '#e6f1ff',
-                      border: '1px solid rgba(148, 163, 184, 0.2)',
-                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-                    },
-                    success: {
-                      iconTheme: {
-                        primary: '#43b581',
-                        secondary: '#e6f1ff',
-                      },
-                    },
-                    error: {
-                      iconTheme: {
-                        primary: '#f04747',
-                        secondary: '#e6f1ff',
-                      },
-                    },
-                  }}
-                />
-              </div>
-            </WebSocketProvider>
+            <div className="App">
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/" element={<HomePage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+              <Toaster 
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: 'var(--background-floating)',
+                    color: 'var(--text-normal)',
+                    border: '1px solid var(--border-color)',
+                  },
+                }}
+              />
+            </div>
           </Router>
         </AuthProvider>
       </ThemeProvider>

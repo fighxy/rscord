@@ -1,44 +1,95 @@
-import httpClient from "../../shared/api/http";
+import API_CONFIG from '../../config/api';
 
-export type Channel = { 
-  id: string; 
-  guild_id: string; 
-  name: string; 
-  channel_type: string; // "text" или "voice"
-  created_at: string 
-};
+export interface Channel {
+  id: string;
+  name: string;
+  type: 'text' | 'voice';
+  channel_type: 'text' | 'voice'; // Для совместимости с компонентами
+  server_id: string;
+  position: number;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface CreateChannelRequest {
-  guild_id: string;
   name: string;
+  type: 'text' | 'voice';
+  server_id: string;
 }
 
-export async function listChannels(guild_id: string) {
-  const res = await httpClient.get<Channel[]>(`/guilds/${guild_id}/channels`);
-  return res.data;
-}
+export const channelsAPI = {
+  async getChannels(serverId: string): Promise<Channel[]> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHANNELS.LIST(serverId)}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-export async function createChannel(guild_id: string, name: string, channelType: 'text' | 'voice' = 'text') {
-  const res = await httpClient.post<Channel>('/guilds/' + guild_id + '/channels', {
-    guild_id,
-    name,
-    channel_type: channelType
-  });
-  return res.data;
-}
+    if (!response.ok) {
+      throw new Error('Failed to get channels');
+    }
 
-export async function getChannel(channel_id: string) {
-  const res = await httpClient.get<Channel>(`/channels/${channel_id}`);
-  return res.data;
-}
+    return await response.json();
+  },
 
-export async function updateChannel(id: string, name: string) {
-  const res = await httpClient.put<Channel>(`/channels/${id}`, { name });
-  return res.data;
-}
+  async createChannel(data: CreateChannelRequest): Promise<Channel> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHANNELS.CREATE(data.server_id)}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
 
-export async function deleteChannel(id: string) {
-  await httpClient.delete(`/channels/${id}`);
-}
+    if (!response.ok) {
+      throw new Error('Failed to create channel');
+    }
+
+    return await response.json();
+  },
+
+  async updateChannel(serverId: string, channelId: string, data: Partial<Channel>): Promise<Channel> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHANNELS.UPDATE(serverId, channelId)}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update channel');
+    }
+
+    return await response.json();
+  },
+
+  async deleteChannel(serverId: string, channelId: string): Promise<void> {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.CHANNELS.DELETE(serverId, channelId)}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete channel');
+    }
+  }
+};
+
+// Экспортируем функции для совместимости с компонентами
+export const listChannels = channelsAPI.getChannels;
+export const createChannel = channelsAPI.createChannel;
+export const updateChannel = channelsAPI.updateChannel;
+export const deleteChannel = channelsAPI.deleteChannel;
 
 

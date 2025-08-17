@@ -570,3 +570,139 @@ pub async fn typing_indicator(
 
     Ok(Json(serde_json::json!({"success": true})))
 }
+
+// User handlers
+pub async fn get_user_profile(
+    State(state): State<ChatState>,
+    headers: HeaderMap,
+) -> Result<Json<User>, StatusCode> {
+    let user_id = get_user_from_request(&state, &headers).await?;
+    
+    let users: Collection<User> = state.mongo.database("rscord").collection("users");
+    let user = users
+        .find_one(doc! {"_id": &user_id})
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    Ok(Json(user))
+}
+
+pub async fn update_user_profile(
+    State(state): State<ChatState>,
+    headers: HeaderMap,
+    Json(update_req): Json<UpdateUserRequest>,
+) -> Result<Json<User>, StatusCode> {
+    let user_id = get_user_from_request(&state, &headers).await?;
+    
+    let users: Collection<User> = state.mongo.database("rscord").collection("users");
+    let update = doc! {
+        "$set": {
+            "display_name": &update_req.display_name,
+            "email": &update_req.email,
+        }
+    };
+
+    users
+        .update_one(doc! {"_id": &user_id}, update)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user = users
+        .find_one(doc! {"_id": &user_id})
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    Ok(Json(user))
+}
+
+pub async fn update_user_avatar(
+    State(state): State<ChatState>,
+    headers: HeaderMap,
+    Json(avatar_req): Json<UpdateAvatarRequest>,
+) -> Result<Json<UpdateAvatarResponse>, StatusCode> {
+    let _user_id = get_user_from_request(&state, &headers).await?;
+    
+    // Placeholder implementation
+    Ok(Json(UpdateAvatarResponse {
+        avatar_url: avatar_req.avatar_url,
+    }))
+}
+
+pub async fn update_user_status(
+    State(state): State<ChatState>,
+    headers: HeaderMap,
+    Json(status_req): Json<UpdateStatusRequest>,
+) -> Result<Json<UpdateStatusResponse>, StatusCode> {
+    let _user_id = get_user_from_request(&state, &headers).await?;
+    
+    // Placeholder implementation
+    Ok(Json(UpdateStatusResponse {
+        status: status_req.status,
+    }))
+}
+
+pub async fn update_user_settings(
+    State(state): State<ChatState>,
+    headers: HeaderMap,
+    Json(settings_req): Json<UpdateSettingsRequest>,
+) -> Result<Json<UpdateSettingsResponse>, StatusCode> {
+    let _user_id = get_user_from_request(&state, &headers).await?;
+    
+    // Placeholder implementation
+    Ok(Json(UpdateSettingsResponse {
+        message: "Settings updated successfully".to_string(),
+    }))
+}
+
+// File handlers
+pub async fn upload_file(
+    State(state): State<ChatState>,
+    headers: HeaderMap,
+    // Note: This is a simplified implementation. In production, you'd want proper multipart handling
+    Json(upload_req): Json<UploadFileRequest>,
+) -> Result<Json<UploadFileResponse>, StatusCode> {
+    let _user_id = get_user_from_request(&state, &headers).await?;
+    
+    // Placeholder implementation
+    Ok(Json(UploadFileResponse {
+        id: "file_123".to_string(),
+        filename: upload_req.filename,
+        url: format!("/files/{}", "file_123"),
+        size: upload_req.size,
+        mime_type: upload_req.mime_type,
+        uploaded_at: chrono::Utc::now(),
+    }))
+}
+
+pub async fn get_file(
+    State(state): State<ChatState>,
+    headers: HeaderMap,
+    Path(file_id): Path<String>,
+) -> Result<Json<FileInfo>, StatusCode> {
+    let _user_id = get_user_from_request(&state, &headers).await?;
+    
+    // Placeholder implementation
+    Ok(Json(FileInfo {
+        id: file_id,
+        filename: "example.txt".to_string(),
+        url: format!("/files/{}", file_id),
+        size: 1024,
+        mime_type: "text/plain".to_string(),
+        uploaded_at: chrono::Utc::now(),
+    }))
+}
+
+pub async fn delete_file(
+    State(state): State<ChatState>,
+    headers: HeaderMap,
+    Path(file_id): Path<String>,
+) -> Result<Json<DeleteFileResponse>, StatusCode> {
+    let _user_id = get_user_from_request(&state, &headers).await?;
+    
+    // Placeholder implementation
+    Ok(Json(DeleteFileResponse {
+        message: format!("File {} deleted successfully", file_id),
+    }))
+}

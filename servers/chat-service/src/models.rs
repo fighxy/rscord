@@ -132,6 +132,96 @@ pub struct UserInfo {
     pub display_name: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct User {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub email: String,
+    pub display_name: String,
+    pub avatar: Option<String>,
+    pub status: Option<UserStatus>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum UserStatus {
+    Online,
+    Idle,
+    Dnd,
+    Offline,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateUserRequest {
+    pub display_name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateAvatarRequest {
+    pub avatar_url: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateAvatarResponse {
+    pub avatar_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateStatusRequest {
+    pub status: UserStatus,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateStatusResponse {
+    pub status: UserStatus,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateSettingsRequest {
+    pub theme: Option<String>,
+    pub language: Option<String>,
+    pub notifications: Option<bool>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UpdateSettingsResponse {
+    pub message: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UploadFileRequest {
+    pub filename: String,
+    pub size: u64,
+    pub mime_type: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct UploadFileResponse {
+    pub id: String,
+    pub filename: String,
+    pub url: String,
+    pub size: u64,
+    pub mime_type: String,
+    pub uploaded_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileInfo {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub filename: String,
+    pub url: String,
+    pub size: u64,
+    pub mime_type: String,
+    pub uploaded_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DeleteFileResponse {
+    pub message: String,
+}
+
 impl Guild {
     pub fn new(name: String, description: Option<String>, owner_id: String) -> Self {
         Self {

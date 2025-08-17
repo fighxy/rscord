@@ -43,12 +43,16 @@ async fn main() {
 
     // Настройка маршрутизации к микросервисам
     let mut services = HashMap::new();
-    services.insert("/auth".to_string(), "http://127.0.0.1:14701".to_string());
-    services.insert("/voice".to_string(), "http://127.0.0.1:14705".to_string());
-    services.insert("/chat".to_string(), "http://127.0.0.1:14703".to_string());
-    services.insert("/guilds".to_string(), "http://127.0.0.1:14703".to_string());
-    services.insert("/channels".to_string(), "http://127.0.0.1:14703".to_string());
-    services.insert("/presence".to_string(), "http://127.0.0.1:14706".to_string());
+    services.insert("/api/auth".to_string(), "http://127.0.0.1:14701".to_string());
+    services.insert("/api/voice".to_string(), "http://127.0.0.1:14705".to_string());
+    services.insert("/api/chat".to_string(), "http://127.0.0.1:14703".to_string());
+    services.insert("/api/guilds".to_string(), "http://127.0.0.1:14703".to_string());
+    services.insert("/api/servers".to_string(), "http://127.0.0.1:14703".to_string());
+    services.insert("/api/channels".to_string(), "http://127.0.0.1:14703".to_string());
+    services.insert("/api/messages".to_string(), "http://127.0.0.1:14703".to_string());
+    services.insert("/api/users".to_string(), "http://127.0.0.1:14703".to_string());
+    services.insert("/api/files".to_string(), "http://127.0.0.1:14703".to_string());
+    services.insert("/api/presence".to_string(), "http://127.0.0.1:14706".to_string());
 
     let cors = CorsLayer::new()
         .allow_origin(CorsAny)
@@ -144,7 +148,7 @@ fn determine_target_service(
     
     // По умолчанию направляем на chat-service
     services
-        .get("/chat")
+        .get("/api/chat")
         .cloned()
         .ok_or(StatusCode::NOT_FOUND)
 }

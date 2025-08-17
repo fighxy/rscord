@@ -1,5 +1,4 @@
-import { apiClient } from '../../shared/api/http';
-import { buildApiUrl } from '../../config/api';
+import API_CONFIG from '../../config/api';
 
 export interface LoginRequest {
   email: string;
@@ -46,7 +45,20 @@ export interface CurrentUserResponse {
 export const authAPI = {
   async login(data: LoginRequest): Promise<AuthResponse> {
     try {
-      return await apiClient.post(buildApiUrl('AUTH', '/login'), data);
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw { statusCode: response.status, response: { data: errorData } };
+      }
+      
+      return await response.json();
     } catch (error: any) {
       if (error.statusCode === 401) {
         throw new Error('Неверный email или пароль');
@@ -60,7 +72,20 @@ export const authAPI = {
 
   async register(data: RegisterRequest): Promise<UserResponse> {
     try {
-      return await apiClient.post(buildApiUrl('AUTH', '/register'), data);
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REGISTER}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw { statusCode: response.status, response: { data: errorData } };
+      }
+      
+      return await response.json();
     } catch (error: any) {
       if (error.statusCode === 409) {
         throw new Error('Пользователь с таким email уже существует');
@@ -76,7 +101,12 @@ export const authAPI = {
   async logout(): Promise<void> {
     try {
       // Call logout endpoint to invalidate token on server
-      await apiClient.post(buildApiUrl('AUTH', '/logout'));
+      await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGOUT}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
     } catch (error) {
       console.warn('Logout API call failed:', error);
     } finally {
@@ -88,7 +118,20 @@ export const authAPI = {
 
   async getCurrentUser(): Promise<CurrentUserResponse> {
     try {
-      return await apiClient.get(buildApiUrl('AUTH', '/me'));
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.VERIFY}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw { statusCode: response.status };
+      }
+      
+      return await response.json();
     } catch (error: any) {
       if (error.statusCode === 401) {
         throw new Error('Не авторизован');
@@ -99,9 +142,21 @@ export const authAPI = {
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
     try {
-      return await apiClient.post(buildApiUrl('AUTH', '/refresh'), {
-        refresh_token: refreshToken
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          refresh_token: refreshToken
+        }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Не удалось обновить токен');
+      }
+      
+      return await response.json();
     } catch (error: any) {
       throw new Error('Не удалось обновить токен');
     }
@@ -109,7 +164,21 @@ export const authAPI = {
 
   async updateProfile(data: Partial<CurrentUserResponse>): Promise<CurrentUserResponse> {
     try {
-      return await apiClient.patch(buildApiUrl('AUTH', '/profile'), data);
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER.UPDATE}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Не удалось обновить профиль');
+      }
+      
+      return await response.json();
     } catch (error: any) {
       throw error;
     }
@@ -117,10 +186,23 @@ export const authAPI = {
 
   async changePassword(oldPassword: string, newPassword: string): Promise<void> {
     try {
-      await apiClient.post(buildApiUrl('AUTH', '/change-password'), {
-        old_password: oldPassword,
-        new_password: newPassword
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER.SETTINGS}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          old_password: oldPassword,
+          new_password: newPassword
+        }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw { statusCode: response.status, response: { data: errorData } };
+      }
     } catch (error: any) {
       if (error.statusCode === 401) {
         throw new Error('Неверный текущий пароль');

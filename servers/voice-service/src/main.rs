@@ -43,6 +43,18 @@ struct IceServer {
     credential: Option<String>,
 }
 
+#[derive(Deserialize)]
+struct MuteRequest {
+    user_id: String,
+    muted: bool,
+}
+
+#[derive(Deserialize)]
+struct DeafenRequest {
+    user_id: String,
+    deafened: bool,
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
@@ -68,12 +80,14 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(|| async { "Voice service is healthy" }))
-        .route("/voice/join", post(join_room))
-        .route("/voice/leave", post(leave_room))
-        .route("/voice/ws", get(websocket_handler))
-        .route("/voice/ice-servers", get(get_ice_servers))
-        .route("/voice/rooms", get(list_rooms))
-        .route("/voice/rooms/:room_id/participants", get(get_room_participants))
+        .route("/api/voice/channels/:channel_id/join", post(join_room))
+        .route("/api/voice/channels/:channel_id/leave", post(leave_room))
+        .route("/api/voice/ws", get(websocket_handler))
+        .route("/api/voice/ice-servers", get(get_ice_servers))
+        .route("/api/voice/mute", post(mute_user))
+        .route("/api/voice/deafen", post(deafen_user))
+        .route("/api/voice/rooms", get(list_rooms))
+        .route("/api/voice/rooms/:room_id/participants", get(get_room_participants))
         .with_state(state)
         .layer(cors);
 
@@ -166,4 +180,28 @@ async fn get_room_participants(
         .ok_or(StatusCode::NOT_FOUND)?;
     
     Ok(Json(participants))
+}
+
+async fn mute_user(
+    State(state): State<VoiceState>,
+    Json(body): Json<MuteRequest>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    // Placeholder implementation
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "user_id": body.user_id,
+        "muted": body.muted
+    })))
+}
+
+async fn deafen_user(
+    State(state): State<VoiceState>,
+    Json(body): Json<DeafenRequest>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    // Placeholder implementation
+    Ok(Json(serde_json::json!({
+        "success": true,
+        "user_id": body.user_id,
+        "deafened": body.deafened
+    })))
 }

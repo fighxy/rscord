@@ -21,10 +21,12 @@ pub async fn create_auth_app(state: AuthState) -> Router {
 
     Router::new()
         .route("/health", get(|| async { "Auth service is healthy" }))
-        .route("/auth/register", post(handlers::register))
-        .route("/auth/login", post(handlers::login))
-        .route("/auth/me", get(handlers::get_current_user))
-        .route("/auth/verify", post(handlers::verify_token))
+        .route("/api/auth/register", post(handlers::register))
+        .route("/api/auth/login", post(handlers::login))
+        .route("/api/auth/me", get(handlers::get_current_user))
+        .route("/api/auth/verify", get(handlers::verify_token))
+        .route("/api/auth/refresh", post(handlers::refresh_token))
+        .route("/api/auth/logout", post(handlers::logout))
         .with_state(state)
         .layer(cors)
 }
