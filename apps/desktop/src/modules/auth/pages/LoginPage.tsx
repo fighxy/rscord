@@ -3,6 +3,7 @@ import { useAuth } from "../store";
 import { authAPI } from "../api";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthError } from "../components/AuthError";
+import { Logo } from "../../../components/ui/Logo";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -83,10 +84,9 @@ export default function LoginPage() {
         >
           {/* Logo and Title */}
           <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'var(--discord-blurple)' }}>
-              RSCORD
-            </h1>
-            <p className="text-muted">Добро пожаловать!</p>
+            <div className="flex justify-center mb-4">
+              <Logo size="xxxl" />
+            </div>
           </div>
           
           {/* Error message */}

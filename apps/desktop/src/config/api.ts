@@ -1,108 +1,226 @@
-// API Configuration for RSCORD microservices
+// API Configuration for RSCORD Desktop (Tauri)
+import { invoke } from '@tauri-apps/api/core';
+
+// Server configuration
 export const API_CONFIG = {
-  // Base URLs - can be overridden with environment variables
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://127.0.0.1:14702',
-  WS_URL: import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:14702',
+  // Production server
+  BASE_URL: import.meta.env.VITE_API_URL || 'http://5.35.83.143:14700',
+  WS_URL: import.meta.env.VITE_WS_URL || 'ws://5.35.83.143:14700',
   
-  // Microservice endpoints
-  SERVICES: {
-    AUTH: '/auth',
-    CHAT: '/chat', 
-    VOICE: '/voice',
-    PRESENCE: '/presence',
-    GATEWAY: '/gateway',
-    GUILDS: '/guilds',
-    CHANNELS: '/channels',
-    MESSAGES: '/messages',
-    USERS: '/users',
+  // API endpoints
+  ENDPOINTS: {
+    // Auth
+    AUTH: {
+      LOGIN: '/api/auth/login',
+      REGISTER: '/api/auth/register',
+      REFRESH: '/api/auth/refresh',
+      LOGOUT: '/api/auth/logout',
+      VERIFY: '/api/auth/verify',
+    },
+    // User
+    USER: {
+      PROFILE: '/api/users/profile',
+      UPDATE: '/api/users/update',
+      AVATAR: '/api/users/avatar',
+      STATUS: '/api/users/status',
+      SETTINGS: '/api/users/settings',
+    },
+    // Servers
+    SERVERS: {
+      LIST: '/api/servers',
+      CREATE: '/api/servers/create',
+      JOIN: '/api/servers/join',
+      LEAVE: (id: string) => `/api/servers/${id}/leave`,
+      DELETE: (id: string) => `/api/servers/${id}`,
+      MEMBERS: (id: string) => `/api/servers/${id}/members`,
+    },
+    // Channels
+    CHANNELS: {
+      LIST: (serverId: string) => `/api/servers/${serverId}/channels`,
+      CREATE: (serverId: string) => `/api/servers/${serverId}/channels`,
+      UPDATE: (serverId: string, channelId: string) => `/api/servers/${serverId}/channels/${channelId}`,
+      DELETE: (serverId: string, channelId: string) => `/api/servers/${serverId}/channels/${channelId}`,
+    },
+    // Messages
+    MESSAGES: {
+      LIST: (channelId: string) => `/api/channels/${channelId}/messages`,
+      SEND: (channelId: string) => `/api/channels/${channelId}/messages`,
+      UPDATE: (channelId: string, messageId: string) => `/api/channels/${channelId}/messages/${messageId}`,
+      DELETE: (channelId: string, messageId: string) => `/api/channels/${channelId}/messages/${messageId}`,
+      REACT: (channelId: string, messageId: string) => `/api/channels/${channelId}/messages/${messageId}/react`,
+    },
+    // Voice
+    VOICE: {
+      JOIN: (channelId: string) => `/api/voice/channels/${channelId}/join`,
+      LEAVE: (channelId: string) => `/api/voice/channels/${channelId}/leave`,
+      MUTE: '/api/voice/mute',
+      DEAFEN: '/api/voice/deafen',
+      ICE_SERVERS: '/api/voice/ice-servers',
+    },
+    // Files
+    FILES: {
+      UPLOAD: '/api/files/upload',
+      DOWNLOAD: (fileId: string) => `/api/files/${fileId}`,
+      DELETE: (fileId: string) => `/api/files/${fileId}`,
+    },
   },
   
   // WebSocket events
   WS_EVENTS: {
-    // Connection events
+    // Connection
     CONNECT: 'connect',
     DISCONNECT: 'disconnect',
     ERROR: 'error',
     
-    // Auth events
-    AUTH_SUCCESS: 'auth_success',
-    AUTH_ERROR: 'auth_error',
+    // Auth
+    AUTHENTICATED: 'authenticated',
+    UNAUTHORIZED: 'unauthorized',
     
-    // Message events
-    MESSAGE_CREATE: 'message_create',
-    MESSAGE_UPDATE: 'message_update',
-    MESSAGE_DELETE: 'message_delete',
+    // Messages
+    MESSAGE_CREATE: 'message:create',
+    MESSAGE_UPDATE: 'message:update',
+    MESSAGE_DELETE: 'message:delete',
+    MESSAGE_REACTION: 'message:reaction',
     
-    // Typing events
-    TYPING_START: 'typing_start',
-    TYPING_STOP: 'typing_stop',
+    // Presence
+    PRESENCE_UPDATE: 'presence:update',
+    TYPING_START: 'typing:start',
+    TYPING_STOP: 'typing:stop',
     
-    // Presence events
-    PRESENCE_UPDATE: 'presence_update',
-    USER_STATUS_UPDATE: 'user_status_update',
+    // Voice
+    VOICE_STATE_UPDATE: 'voice:state:update',
+    VOICE_SPEAKING: 'voice:speaking',
     
-    // Voice events
-    VOICE_STATE_UPDATE: 'voice_state_update',
-    VOICE_SERVER_UPDATE: 'voice_server_update',
-    
-    // Guild events
-    GUILD_CREATE: 'guild_create',
-    GUILD_UPDATE: 'guild_update',
-    GUILD_DELETE: 'guild_delete',
-    
-    // Channel events
-    CHANNEL_CREATE: 'channel_create',
-    CHANNEL_UPDATE: 'channel_update',
-    CHANNEL_DELETE: 'channel_delete',
-    
-    // Member events
-    MEMBER_JOIN: 'member_join',
-    MEMBER_LEAVE: 'member_leave',
-    MEMBER_UPDATE: 'member_update',
+    // Server events
+    SERVER_UPDATE: 'server:update',
+    CHANNEL_CREATE: 'channel:create',
+    CHANNEL_UPDATE: 'channel:update',
+    CHANNEL_DELETE: 'channel:delete',
+    MEMBER_JOIN: 'member:join',
+    MEMBER_LEAVE: 'member:leave',
+    MEMBER_UPDATE: 'member:update',
   },
   
-  // Request timeout
-  TIMEOUT: 10000,
-  
-  // Retry configuration
-  RETRY: {
-    MAX_ATTEMPTS: 3,
-    DELAY: 1000,
-    BACKOFF_MULTIPLIER: 2,
-  },
-  
-  // File upload limits
-  FILE_UPLOAD: {
-    MAX_SIZE: 25 * 1024 * 1024, // 25MB
-    ALLOWED_TYPES: [
-      'image/jpeg',
-      'image/png', 
-      'image/gif',
-      'image/webp',
-      'video/mp4',
-      'video/webm',
-      'audio/mpeg',
-      'audio/ogg',
-      'application/pdf',
-    ],
-  },
-  
-  // LiveKit configuration for voice/video
-  LIVEKIT: {
-    URL: import.meta.env.VITE_LIVEKIT_URL || 'ws://127.0.0.1:7880',
-    API_KEY: import.meta.env.VITE_LIVEKIT_API_KEY || 'devkey',
-    API_SECRET: import.meta.env.VITE_LIVEKIT_API_SECRET || 'secret',
+  // Request configuration
+  REQUEST: {
+    TIMEOUT: 30000,
+    RETRY_ATTEMPTS: 3,
+    RETRY_DELAY: 1000,
   },
 };
 
-// Helper function to build full API URLs
-export function buildApiUrl(service: keyof typeof API_CONFIG.SERVICES, path: string = ''): string {
-  return `${API_CONFIG.BASE_URL}${API_CONFIG.SERVICES[service]}${path}`;
+// Storage keys for Tauri
+export const STORAGE_KEYS = {
+  ACCESS_TOKEN: 'access_token',
+  REFRESH_TOKEN: 'refresh_token',
+  USER_DATA: 'user_data',
+  SETTINGS: 'settings',
+  THEME: 'theme',
+  LAST_SERVER: 'last_server',
+  LAST_CHANNEL: 'last_channel',
+};
+
+// Tauri-specific storage functions
+export const storage = {
+  async get(key: string): Promise<string | null> {
+    try {
+      return await invoke('get_storage', { key });
+    } catch (error) {
+      console.error(`Failed to get ${key} from storage:`, error);
+      return null;
+    }
+  },
+  
+  async set(key: string, value: string): Promise<void> {
+    try {
+      await invoke('set_storage', { key, value });
+    } catch (error) {
+      console.error(`Failed to set ${key} in storage:`, error);
+    }
+  },
+  
+  async remove(key: string): Promise<void> {
+    try {
+      await invoke('remove_storage', { key });
+    } catch (error) {
+      console.error(`Failed to remove ${key} from storage:`, error);
+    }
+  },
+  
+  async clear(): Promise<void> {
+    try {
+      await invoke('clear_storage');
+    } catch (error) {
+      console.error('Failed to clear storage:', error);
+    }
+  },
+};
+
+// Check server connection
+export async function checkServerConnection(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_CONFIG.BASE_URL}/health`, {
+      method: 'GET',
+      mode: 'cors',
+    });
+    return response.ok;
+  } catch (error) {
+    console.error('Server connection check failed:', error);
+    return false;
+  }
 }
 
-// Helper function to build WebSocket URLs
-export function buildWsUrl(path: string = ''): string {
-  return `${API_CONFIG.WS_URL}${path}`;
+// Get stored auth token
+export async function getAuthToken(): Promise<string | null> {
+  return await storage.get(STORAGE_KEYS.ACCESS_TOKEN);
+}
+
+// Set auth token
+export async function setAuthToken(token: string): Promise<void> {
+  await storage.set(STORAGE_KEYS.ACCESS_TOKEN, token);
+}
+
+// Clear auth data
+export async function clearAuthData(): Promise<void> {
+  await storage.remove(STORAGE_KEYS.ACCESS_TOKEN);
+  await storage.remove(STORAGE_KEYS.REFRESH_TOKEN);
+  await storage.remove(STORAGE_KEYS.USER_DATA);
+}
+
+// API request helper with Tauri support
+export async function apiRequest<T = any>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const token = await getAuthToken();
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+  
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  const url = `${API_CONFIG.BASE_URL}${endpoint}`;
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+      mode: 'cors',
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('API request error:', error);
+    throw error;
+  }
 }
 
 export default API_CONFIG;

@@ -1,5 +1,6 @@
 import { Plus, Home, Compass } from "lucide-react";
 import { useState } from "react";
+import { Logo } from "../../components/ui/Logo";
 
 export function GuildBar() {
   const [activeGuild, setActiveGuild] = useState<string>("home");
@@ -13,6 +14,27 @@ export function GuildBar() {
 
   return (
     <>
+      {/* RSCord Logo */}
+      <div className="relative group mb-4">
+        <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 bg-white rounded-r transition-all duration-200 
+                      group-hover:h-5 h-0" />
+        <div className="guild-pill p-2">
+          <Logo size="sm" showBorder={false} />
+        </div>
+        
+        {/* Tooltip */}
+        <div className="absolute left-16 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 
+                      pointer-events-none transition-opacity duration-200">
+          <div className="px-3 py-2 rounded-md whitespace-nowrap text-sm font-medium"
+               style={{ background: 'var(--background-floating)', color: 'var(--text-normal)' }}>
+            RSCord
+          </div>
+        </div>
+      </div>
+      
+      {/* Separator */}
+      <div className="divider mx-5 mb-4" />
+      
       {/* Home Button */}
       <div className="relative group">
         <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 bg-white rounded-r transition-all duration-200 
