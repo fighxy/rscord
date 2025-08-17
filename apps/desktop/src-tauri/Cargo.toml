@@ -1,8 +1,8 @@
 [package]
 name = "desktop"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "RSCord Desktop Application"
+authors = ["RSCord Team"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -22,4 +22,19 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+
+# Optimize release builds for size and performance
+[profile.release]
+opt-level = "z"           # Optimize for size
+lto = true                # Link Time Optimization
+codegen-units = 1         # Single codegen unit for better optimization
+panic = "abort"           # Abort on panic (smaller binary)
+strip = true              # Strip symbols from binary
+overflow-checks = false   # Disable overflow checks in release
+
+# Development profile
+[profile.dev]
+opt-level = 0             # No optimization for faster compilation
+debug = true              # Include debug information
+overflow-checks = true    # Enable overflow checks in development
 

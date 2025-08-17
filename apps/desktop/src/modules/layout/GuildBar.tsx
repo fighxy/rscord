@@ -1,82 +1,98 @@
-import { useAuth } from "../auth/store";
-import { useNavigate } from "react-router-dom";
-import { NotificationCenter } from "../notifications/components/NotificationCenter";
-import { CompactConnectionStatus } from "../events/components/CompactConnectionStatus";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Plus, Home, Compass } from "lucide-react";
+import { useState } from "react";
 
 export function GuildBar() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  const [activeGuild, setActiveGuild] = useState<string>("home");
+  
+  // Mock guilds data - replace with real data
+  const guilds = [
+    { id: "1", name: "React Dev", icon: "R" },
+    { id: "2", name: "TypeScript", icon: "TS" },
+    { id: "3", name: "Gaming", icon: "G" },
+  ];
 
   return (
     <>
-      {/* Home Server */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="w-12 h-12 bg-discord-blurple hover:bg-blue-600 text-white rounded-full hover:scale-105 transition-all duration-200"
-        title="Home"
-      >
-        🏠
-      </Button>
-      
-      {/* Add Server */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="w-12 h-12 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-full hover:scale-105 transition-all duration-200"
-        title="New"
-      >
-        ＋
-      </Button>
+      {/* Home Button */}
+      <div className="relative group">
+        <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 bg-white rounded-r transition-all duration-200 
+                      group-hover:h-5 h-2" />
+        <button
+          onClick={() => setActiveGuild("home")}
+          className={`guild-pill ${activeGuild === "home" ? "active" : ""}`}
+          aria-label="Home"
+        >
+          <Home size={24} />
+        </button>
+      </div>
       
       {/* Separator */}
-      <div className="w-8 h-px bg-gray-700 my-2"></div>
+      <div className="divider mx-5" />
       
-      {/* User Info and Controls */}
-      <div className="mt-auto flex flex-col items-center space-y-3 pt-3 border-t border-gray-800">
-        {user && (
-          <div className="flex flex-col items-center space-y-2">
-            <Avatar className="w-8 h-8">
-              <AvatarFallback className="bg-discord-blurple text-white text-sm font-medium">
-                {user.displayName?.charAt(0).toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="text-xs text-gray-400 text-center px-2 max-w-[3rem] truncate">
-              {user.displayName}
+      {/* Guild List */}
+      {guilds.map((guild) => (
+        <div key={guild.id} className="relative group">
+          <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 bg-white rounded-r transition-all duration-200 
+                        group-hover:h-5 h-0" />
+          <button
+            onClick={() => setActiveGuild(guild.id)}
+            className={`guild-pill ${activeGuild === guild.id ? "active" : ""}`}
+            aria-label={guild.name}
+          >
+            <span className="text-lg font-semibold">{guild.icon}</span>
+          </button>
+          
+          {/* Tooltip */}
+          <div className="absolute left-16 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 
+                        pointer-events-none transition-opacity duration-200">
+            <div className="px-3 py-2 rounded-md whitespace-nowrap text-sm font-medium"
+                 style={{ background: 'var(--background-floating)', color: 'var(--text-normal)' }}>
+              {guild.name}
             </div>
           </div>
-        )}
-        
-        {/* Notification Center */}
-        <div className="flex justify-center">
-          <NotificationCenter />
         </div>
-        
-        {/* Connection Status */}
-        <div className="flex justify-center">
-          <CompactConnectionStatus />
-        </div>
-        
-        {/* Logout Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleLogout}
-          className="w-12 h-12 bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-gray-500 text-gray-300 hover:text-white rounded-full hover:scale-105 transition-all duration-200 group"
-          title="Выйти из аккаунта"
+      ))}
+      
+      {/* Add Guild Button */}
+      <div className="relative group">
+        <button
+          className="guild-pill hover:bg-discord-green"
+          aria-label="Add a Server"
         >
-          <span className="text-lg">🚪</span>
-        </Button>
+          <Plus size={24} className="text-discord-green group-hover:text-white" />
+        </button>
+        
+        {/* Tooltip */}
+        <div className="absolute left-16 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 
+                      pointer-events-none transition-opacity duration-200">
+          <div className="px-3 py-2 rounded-md whitespace-nowrap text-sm font-medium"
+               style={{ background: 'var(--background-floating)', color: 'var(--text-normal)' }}>
+            Добавить сервер
+          </div>
+        </div>
+      </div>
+      
+      {/* Separator */}
+      <div className="divider mx-5" />
+      
+      {/* Explore Public Servers */}
+      <div className="relative group">
+        <button
+          className="guild-pill hover:bg-discord-green"
+          aria-label="Explore Public Servers"
+        >
+          <Compass size={24} className="text-discord-green group-hover:text-white" />
+        </button>
+        
+        {/* Tooltip */}
+        <div className="absolute left-16 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 
+                      pointer-events-none transition-opacity duration-200">
+          <div className="px-3 py-2 rounded-md whitespace-nowrap text-sm font-medium"
+               style={{ background: 'var(--background-floating)', color: 'var(--text-normal)' }}>
+            Исследовать сервера
+          </div>
+        </div>
       </div>
     </>
   );
 }
-
-

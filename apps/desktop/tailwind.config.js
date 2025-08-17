@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ["class"],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -7,55 +8,54 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Discord-like цветовая схема
-        primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
-        },
-        gray: {
-          50: '#f9fafb',
-          100: '#f3f4f6',
-          200: '#e5e7eb',
-          300: '#d1d5db',
-          400: '#9ca3af',
-          500: '#6b7280',
-          600: '#4b5563',
-          700: '#374151',
-          800: '#1f2937',
-          900: '#111827',
-        },
+        // Discord color palette
         discord: {
+          darker: '#202225',
+          dark: '#2f3136',
+          'lighter-dark': '#36393f',
+          light: '#40444b',
           blurple: '#5865f2',
-          green: '#57f287',
+          green: '#3ba55d',
           yellow: '#fee75c',
           fuchsia: '#eb459e',
           red: '#ed4245',
-          white: '#ffffff',
-          black: '#000000',
-          'not-quite-black': '#23272a',
-          'dark-but-not-black': '#2c2f33',
-          'lighter-dark': '#36393f',
-          'dark': '#2f3136',
-          'darker': '#202225',
-        }
+        },
+        // Semantic colors
+        background: {
+          primary: '#36393f',
+          secondary: '#2f3136',
+          'secondary-alt': '#292b2f',
+          tertiary: '#202225',
+          accent: '#4f545c',
+          floating: '#18191c',
+        },
+        text: {
+          normal: '#dcddde',
+          muted: '#72767d',
+          link: '#00b0f4',
+        },
+        interactive: {
+          normal: '#b9bbbe',
+          hover: '#dcddde',
+          active: '#fff',
+          muted: '#4f545c',
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Whitney', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+        mono: ['Consolas', 'Andale Mono WT', 'Andale Mono', 'Lucida Console', 'Monaco', 'Courier New', 'Courier', 'monospace'],
       },
       spacing: {
         '18': '4.5rem',
-        '88': '22rem',
-        '128': '32rem',
+        '72': '18rem',
+        '84': '21rem',
+        '96': '24rem',
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-in-out',
-        'slide-up': 'slideUp 0.2s ease-out',
-        'bounce-gentle': 'bounceGentle 0.6s ease-in-out',
+        'slide-up': 'slideUp 0.3s ease-out',
+        'slide-down': 'slideDown 0.3s ease-out',
+        'discord-pulse': 'discord-pulse 1.5s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -66,10 +66,19 @@ export default {
           '0%': { transform: 'translateY(10px)', opacity: '0' },
           '100%': { transform: 'translateY(0)', opacity: '1' },
         },
-        bounceGentle: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-5px)' },
+        slideDown: {
+          '0%': { transform: 'translateY(-10px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
         },
+        'discord-pulse': {
+          '0%': { opacity: '1' },
+          '50%': { opacity: '0.4' },
+          '100%': { opacity: '1' },
+        },
+      },
+      borderRadius: {
+        'lg': '0.5rem',
+        'xl': '0.75rem',
       },
     },
   },

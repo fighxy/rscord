@@ -1,0 +1,81 @@
+name: Build Desktop App
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/desktop/**'
+      - '.github/workflows/build-desktop.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/desktop/**'
+  release:
+    types: [published]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            installer: msi,nsis
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: apps/desktop/package-lock.json
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+
+      - name: Install Tauri CLI
+        run: npm install -g @tauri-apps/cli
+
+      - name: Change to desktop directory
+        working-directory: apps/desktop
+        run: pwd && ls -la
+
+      - name: Install npm dependencies
+        working-directory: apps/desktop
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: apps/desktop
+        run: npm run build
+
+      - name: Build Tauri application
+        working-directory: apps/desktop
+        run: tauri build --release
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-installers
+          path: apps/desktop/src-tauri/target/release/bundle/
+          retention-days: 30
+
+      - name: Create release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            apps/desktop/src-tauri/target/release/bundle/**/*.msi
+            apps/desktop/src-tauri/target/release/bundle/**/*.exe
+          draft: false
+          prerelease: false
+          generate_release_notes: true

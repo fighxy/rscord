@@ -36,4 +36,29 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
+
+  // Production build optimizations
+  build: {
+    target: 'esnext',
+    minify: 'esbuild', // Use esbuild instead of terser for better performance
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-avatar', '@radix-ui/react-context-menu', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-slot'],
+          utils: ['clsx', 'class-variance-authority', 'tailwind-merge'],
+          livekit: ['@livekit/components-react', 'livekit-client']
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
+    }
+  },
+
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@radix-ui/react-*', 'lucide-react']
+  }
 }));

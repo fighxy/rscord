@@ -1,11 +1,8 @@
 import { useState } from "react";
-import "../../../styles/theme.css";
 import { useAuth } from "../store";
 import { authAPI } from "../api";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthError } from "../components/AuthError";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -43,20 +40,23 @@ export default function LoginPage() {
     try {
       const response = await authAPI.login({ email, password });
       
-      // Сохраняем токен и пользователя
+      // Save tokens
       setToken(response.access_token);
+      if (response.refresh_token) {
+        localStorage.setItem('refresh_token', response.refresh_token);
+      }
       
-      // Получаем информацию о пользователе
+      // Get user info
       try {
         const userInfo = await authAPI.getCurrentUser();
         setUser({
           id: userInfo.id,
           email: userInfo.email,
-          displayName: userInfo.display_name
+          displayName: userInfo.display_name || userInfo.username
         });
       } catch (userError) {
-        console.warn("Не удалось получить информацию о пользователе:", userError);
-        // Создаем базовую информацию о пользователе из email
+        console.warn("Could not fetch user info:", userError);
+        // Create basic user info from email
         setUser({
           id: "temp-" + Date.now(),
           email: email,
@@ -74,43 +74,91 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="grid place-items-center h-screen bg-discord-darker">
-      <form onSubmit={submit} className="grid gap-4 w-90 max-w-md p-8 bg-discord-dark rounded-lg border border-gray-700">
-        <h1 className="text-3xl font-bold text-center text-white">RSCORD</h1>
-        <h3 className="text-center text-gray-400 m-0">Войти в аккаунт</h3>
-        
-        <AuthError error={error} />
-        
-        <Input 
-          placeholder="Email" 
-          type="email"
-          value={email} 
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={isLoading}
-          className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
-        />
-        <Input 
-          placeholder="Пароль" 
-          type="password" 
-          value={password} 
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={isLoading}
-          className="bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:ring-discord-blurple focus:border-transparent"
-        />
-        <Button 
-          type="submit" 
-          disabled={isLoading}
-          className="bg-discord-blurple hover:bg-blue-600 disabled:opacity-70"
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--background-tertiary)' }}>
+      <div className="w-full max-w-md">
+        <form 
+          onSubmit={submit} 
+          className="rounded-lg p-8 space-y-6"
+          style={{ background: 'var(--background-primary)' }}
         >
-          {isLoading ? "Вход..." : "Войти"}
-        </Button>
-        <div className="text-center mt-2">
-          <span className="text-gray-400">Нет аккаунта? </span>
-          <Link to="/register" className="text-discord-blurple hover:text-blue-400">Зарегистрироваться</Link>
-        </div>
-      </form>
+          {/* Logo and Title */}
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-bold tracking-tight" style={{ color: 'var(--discord-blurple)' }}>
+              RSCORD
+            </h1>
+            <p className="text-muted">Добро пожаловать!</p>
+          </div>
+          
+          {/* Error message */}
+          <AuthError error={error} />
+          
+          {/* Form fields */}
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-xs font-semibold uppercase mb-2 text-muted">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
+                className="form-input"
+                placeholder="name@example.com"
+                autoComplete="email"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="password" className="block text-xs font-semibold uppercase mb-2 text-muted">
+                Пароль
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
+                className="form-input"
+                placeholder="••••••••"
+                autoComplete="current-password"
+              />
+            </div>
+          </div>
+          
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="btn-primary w-full"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Вход...
+              </span>
+            ) : (
+              "Войти"
+            )}
+          </button>
+          
+          {/* Register link */}
+          <div className="text-center text-sm">
+            <span className="text-muted">Нужен аккаунт? </span>
+            <Link 
+              to="/register" 
+              className="font-medium hover:underline"
+              style={{ color: 'var(--discord-blurple)' }}
+            >
+              Зарегистрироваться
+            </Link>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
-
-
