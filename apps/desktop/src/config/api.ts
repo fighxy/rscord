@@ -3,9 +3,9 @@ import { invoke } from '@tauri-apps/api/core';
 
 // Server configuration
 export const API_CONFIG = {
-  // Production server
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://5.35.83.143:14700',
-  WS_URL: import.meta.env.VITE_WS_URL || 'ws://5.35.83.143:14700',
+  // Server URLs - always use production server
+  BASE_URL: 'http://5.35.83.143:14700',
+  WS_URL: 'ws://5.35.83.143:14700',
   
   // API endpoints
   ENDPOINTS: {
@@ -155,6 +155,8 @@ export const storage = {
     }
   },
 };
+
+
 
 // Check server connection
 export async function checkServerConnection(): Promise<boolean> {

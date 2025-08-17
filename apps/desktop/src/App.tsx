@@ -94,6 +94,17 @@ function App() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-discord-blurple mx-auto mb-4"></div>
           <p className="text-white text-lg">Инициализация...</p>
+          {serverStatus === 'error' && (
+            <div className="mt-4 p-4 bg-red-900/20 border border-red-500/30 rounded-lg max-w-md">
+              <p className="text-red-300 text-sm mb-2">Не удалось подключиться к серверу</p>
+              <p className="text-gray-400 text-xs">
+                Текущий сервер: {API_CONFIG.BASE_URL}
+              </p>
+              <p className="text-gray-400 text-xs mt-1">
+                Проверьте, запущен ли сервер и доступен ли порт
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
