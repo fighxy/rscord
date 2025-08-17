@@ -1,9 +1,9 @@
 use axum::{
     body::Body,
-    extract::{Request, State},
+    extract::{Request, State, ws::WebSocketUpgrade},
     http::{header, Method, StatusCode, Uri},
     response::{IntoResponse, Response},
-    routing::any,
+    routing::{any, get},
     Router,
 };
 use http_body_util::BodyExt;
@@ -16,10 +16,17 @@ use std::sync::Arc;
 use tower_http::cors::{Any as CorsAny, CorsLayer};
 use tracing::{error, info};
 
+mod websocket;
+mod routes;
+
+use routes::websocket_handler;
+
 type HttpClient = Client<hyper_util::client::legacy::connect::HttpConnector, Body>;
 
+pub type AppState = GatewayState;
+
 #[derive(Clone)]
-struct GatewayState {
+pub struct GatewayState {
     client: HttpClient,
     services: Arc<HashMap<String, String>>,
     jwt_secret: String,
@@ -68,7 +75,8 @@ async fn main() {
     };
 
     let app = Router::new()
-        .route("/health", axum::routing::get(health_check))
+        .route("/health", get(health_check))
+        .route("/ws", get(websocket_handler))
         .fallback(any(proxy_handler))
         .layer(cors)
         .with_state(state);
