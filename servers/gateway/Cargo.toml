@@ -24,3 +24,5 @@ dashmap = "6"
 jsonwebtoken = "9"
 chrono = { version = "0.4", features = ["serde"] }
 reqwest = { version = "0.12", features = ["json"] }
+redis = { version = "0.25", features = ["tokio-comp", "connection-manager", "streams"] }
+deadpool-redis = "0.15"

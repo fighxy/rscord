@@ -18,6 +18,7 @@ use tracing::{error, info};
 
 mod websocket;
 mod routes;
+mod redis_pubsub;
 
 use routes::websocket_handler;
 

@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use crate::AppState;
 use super::chat_client::{ChatServiceClient, CreateMessageRequest};
 use super::auth::{JwtValidator, simple_token_validation};
+use super::presence_client::{PresenceServiceClient, UserStatus};
 
 pub type SharedState = Arc<ConnectionManager>;
 
@@ -50,6 +51,12 @@ pub enum WsMessage {
     
     #[serde(rename = "typing_stop")]
     TypingStop { channel_id: String },
+    
+    #[serde(rename = "presence_update")]
+    PresenceUpdate {
+        status: String,
+        activity: Option<String>,
+    },
     
     // Server -> Client
     #[serde(rename = "message_received")]
@@ -93,12 +100,14 @@ pub struct WebSocketHandler {
     app_state: AppState,
     connection_manager: SharedState,
     chat_client: ChatServiceClient,
+    presence_client: PresenceServiceClient,
     jwt_validator: JwtValidator,
 }
 
 impl WebSocketHandler {
     pub fn new(app_state: AppState) -> Self {
         let chat_service_url = "http://127.0.0.1:14703".to_string(); // chat-service URL
+        let presence_service_url = "http://127.0.0.1:14706".to_string(); // presence-service URL
         let jwt_secret = app_state.jwt_secret.clone();
         
         Self {
@@ -108,6 +117,7 @@ impl WebSocketHandler {
                 channels: Arc::new(DashMap::new()),
             }),
             chat_client: ChatServiceClient::new(chat_service_url),
+            presence_client: PresenceServiceClient::new(presence_service_url),
             jwt_validator: JwtValidator::new(jwt_secret),
         }
     }
@@ -129,6 +139,16 @@ impl WebSocketHandler {
         };
         
         info!("WebSocket connection established for user: {}", user_id);
+        
+        // Обновляем presence на Online
+        if let Err(e) = self.presence_client.update_presence(
+            &user_id,
+            UserStatus::Online,
+            None,
+            &token,
+        ).await {
+            warn!("Failed to update presence to online: {}", e);
+        }
         
         let (mut sender, mut receiver) = socket.split();
         let (tx, mut rx) = broadcast::channel::<String>(100);
@@ -237,6 +257,11 @@ impl WebSocketHandler {
             
             WsMessage::TypingStop { channel_id } => {
                 Self::handle_typing_indicator(user_id, &channel_id, false, manager).await;
+            }
+            
+            WsMessage::PresenceUpdate { status, activity } => {
+                // Нужно передать presence_client через параметры
+                warn!("Presence update received but handler not fully implemented yet");
             }
             
             _ => {
@@ -406,6 +431,16 @@ impl WebSocketHandler {
     
     async fn cleanup_connection(&self, user_id: &str) {
         info!("Cleaning up connection for user: {}", user_id);
+        
+        // Обновляем presence на Offline
+        if let Err(e) = self.presence_client.update_presence(
+            user_id,
+            UserStatus::Offline,
+            None,
+            "", // Токен не нужен для offline обновления
+        ).await {
+            warn!("Failed to update presence to offline: {}", e);
+        }
         
         if let Some((_, conn_info)) = self.connection_manager.connections.remove(user_id) {
             // Уведомляем о выходе из канала если был подключен

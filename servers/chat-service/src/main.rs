@@ -1,6 +1,7 @@
 mod handlers;
 mod models;
 mod events;
+mod message_handlers;
 
 use axum::{
     routing::{get, post},
@@ -15,6 +16,7 @@ use tracing::info;
 
 #[derive(Clone)]
 pub struct ChatState {
+    pub db: mongodb::Database,
     pub mongo: MongoClient,
     pub config: AppConfig,
     pub event_publisher: Arc<events::EventPublisher>,
@@ -42,8 +44,12 @@ async fn main() {
 
     // Initialize event publisher
     let event_publisher = Arc::new(events::EventPublisher::new().await.expect("Failed to create event publisher"));
+    
+    // Get database
+    let db = mongo.database("rscord");
 
     let state = ChatState {
+        db,
         mongo: mongo.clone(),
         config: cfg,
         event_publisher,
@@ -67,7 +73,14 @@ async fn main() {
         .route("/api/channels/:channel_id/typing", post(handlers::typing_indicator))
         // Message routes
         .route("/api/channels/:channel_id/messages/:message_id", get(handlers::get_message))
-        .route("/api/channels/:channel_id/messages/:message_id", axum::routing::delete(handlers::delete_message))
+        .route("/api/channels/:channel_id/messages/:message_id", axum::routing::put(message_handlers::edit_message))
+        .route("/api/channels/:channel_id/messages/:message_id", axum::routing::delete(message_handlers::delete_message))
+        // Reaction routes
+        .route("/api/channels/:channel_id/messages/:message_id/reactions", post(message_handlers::add_reaction))
+        .route("/api/channels/:channel_id/messages/:message_id/reactions", get(message_handlers::get_reactions))
+        .route("/api/channels/:channel_id/messages/:message_id/reactions/:emoji", axum::routing::delete(message_handlers::remove_reaction))
+        // Attachment routes
+        .route("/api/channels/:channel_id/messages/:message_id/attachments", post(message_handlers::add_attachment))
         // User routes
         .route("/api/users/profile", get(handlers::get_user_profile))
         .route("/api/users/update", post(handlers::update_user_profile))
