@@ -1,138 +1,53 @@
-# RSCORD - Discord-подобное приложение
+# RSCORD 
 
-## Описание
+🦀 **Modern Discord Alternative** built with **Rust** and **Tauri**
 
-RSCORD - это десктопное приложение, построенное на Tauri + React, с серверной частью на Rust (Axum) и базой данных MongoDB.
+A high-performance, secure, and lightweight desktop communication platform featuring real-time messaging, voice channels, and advanced permission systems.
 
-## Система аутентификации
+## ✨ Key Features
 
-Система аутентификации включает в себя:
+- 🚀 **Blazing Fast**: Rust backend with Axum framework
+- 🖥️ **Native Desktop**: Tauri-based client with minimal resource usage  
+- ⚡ **Real-time Messaging**: Redis PubSub for instant message delivery
+- 🔐 **Advanced Security**: JWT authentication with Argon2 password hashing
+- 📁 **File Sharing**: S3-compatible storage with automatic image optimization
+- 👥 **Role-Based Permissions**: Granular channel and server permission system
+- 🎙️ **Voice Support**: WebRTC signaling for voice channels
+- 🌐 **Self-Hostable**: Complete Docker setup for easy deployment
 
-- **Регистрация пользователей** с валидацией данных
-- **Вход в систему** с JWT токенами
-- **Защищенные маршруты** с middleware аутентификации
-- **Автоматическое управление токенами** на клиенте
-- **Безопасное хранение паролей** с использованием Argon2
+## 🏗️ Architecture
 
-## Запуск
+**Microservices Design:**
+- `gateway/` - API Gateway with WebSocket handling
+- `auth-service/` - JWT authentication and user management  
+- `chat-service/` - Messages, channels, and guilds
+- `voice-service/` - WebRTC signaling and voice coordination
+- `file-service/` - File uploads with S3-compatible storage
+- `presence-service/` - User online/offline status tracking
 
-### Предварительные требования
+**Tech Stack:**
+- **Backend**: Rust (Axum, tokio, Redis, MongoDB)
+- **Frontend**: React + TypeScript (Tauri desktop app)
+- **Database**: MongoDB with Redis for caching and PubSub
+- **Storage**: MinIO (S3-compatible) for files and media
+- **Deployment**: Docker Compose with production-ready configuration
 
-- Rust (latest stable)
-- Node.js 18+
-- MongoDB
-- Windows: Visual Studio Build Tools
+## 🚦 Current Status
 
-### Запуск сервера
+✅ **Production Ready Features:**
+- User authentication and registration
+- Real-time text messaging with broadcasting
+- Guild/server creation and management  
+- Advanced role and permission system
+- File uploads with automatic optimization
+- User presence (online/offline) tracking
+- Rate limiting and security measures
 
-1. Перейдите в папку `servers/`:
-```bash
-cd servers
-```
+⚠️ **In Development:**
+- Voice/video calling (WebRTC SFU)
+- Mobile and web clients
+- Bot API and integrations
+- Advanced moderation tools
 
-2. Запустите MongoDB (убедитесь, что MongoDB запущен)
+## 🛠️ Quick Start
 
-3. Запустите API сервер:
-```bash
-cargo run -p rscord-api
-```
-
-Сервер будет доступен по адресу: `http://127.0.0.1:14702`
-
-### Запуск клиента
-
-1. Перейдите в папку `apps/desktop/`:
-```bash
-cd apps/desktop
-```
-
-2. Установите зависимости:
-```bash
-npm install
-```
-
-3. Запустите в режиме разработки:
-```bash
-npm run dev
-```
-
-4. Для сборки Tauri приложения:
-```bash
-npm run tauri dev
-```
-
-## API Endpoints
-
-### Аутентификация
-
-- `POST /auth/register` - Регистрация пользователя
-- `POST /auth/login` - Вход в систему
-- `GET /auth/me` - Получение информации о текущем пользователе
-
-### Защищенные endpoints
-
-- `GET /guilds` - Список серверов
-- `POST /guilds` - Создание сервера
-- `GET /guilds/:id` - Информация о сервере
-- `PUT /guilds/:id` - Обновление сервера
-- `DELETE /guilds/:id` - Удаление сервера
-
-## Структура проекта
-
-```
-rscord/
-├── apps/desktop/          # Tauri + React приложение
-│   ├── src/
-│   │   ├── modules/
-│   │   │   ├── auth/      # Модуль аутентификации
-│   │   │   ├── layout/    # Компоненты макета
-│   │   │   └── ...
-│   │   └── ...
-│   └── src-tauri/         # Rust код для Tauri
-├── servers/               # Серверная часть
-│   └── crates/
-│       ├── api/           # Основной API сервер
-│       ├── common/        # Общие типы и утилиты
-│       └── ...
-└── ...
-```
-
-## Безопасность
-
-- Пароли хешируются с использованием Argon2
-- JWT токены с временем жизни 30 минут
-- Валидация данных на клиенте и сервере
-- CORS настройки для безопасности
-- Rate limiting для защиты от атак
-
-## Разработка
-
-### Добавление новых защищенных endpoints
-
-1. Создайте функцию-обработчик в `servers/crates/api/src/main.rs`
-2. Добавьте маршрут в роутер
-3. Middleware аутентификации автоматически защитит endpoint
-
-### Добавление новых полей пользователя
-
-1. Обновите структуру `UserDoc` в `main.rs`
-2. Обновите соответствующие типы на клиенте
-3. Обновите API функции
-
-## Устранение неполадок
-
-### Ошибка "Failed to create index on users.email"
-
-Это нормально при первом запуске. Индекс будет создан автоматически.
-
-### Ошибки аутентификации
-
-1. Убедитесь, что MongoDB запущен
-2. Проверьте, что JWT_SECRET установлен в переменных окружения
-3. Проверьте логи сервера
-
-### Проблемы с клиентом
-
-1. Убедитесь, что сервер запущен на порту 14702
-2. Проверьте консоль браузера на наличие ошибок
-3. Убедитесь, что все зависимости установлены
