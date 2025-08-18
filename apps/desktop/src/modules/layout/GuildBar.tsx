@@ -7,68 +7,67 @@ export function GuildBar() {
   
   // Mock guilds data - replace with real data
   const guilds = [
-    { id: "1", name: "React Dev", icon: "R" },
-    { id: "2", name: "TypeScript", icon: "TS" },
-    { id: "3", name: "Gaming", icon: "G" },
+    { id: "1", name: "React Dev", icon: "R", color: "from-blue-500 to-purple-600" },
+    { id: "2", name: "TypeScript", icon: "TS", color: "from-green-500 to-teal-600" },
+    { id: "3", name: "Gaming", icon: "G", color: "from-orange-500 to-red-600" },
   ];
 
   return (
-    <>
+    <div className="guild-bar-container flex flex-col items-center py-4 gap-3">
       {/* RSCord Logo */}
-      <div className="relative group mb-4">
-        <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 bg-white rounded-r transition-all duration-200 
-                      group-hover:h-5 h-0" />
-        <div className="guild-pill p-2">
+      <div className="relative group">
+        <div className="guild-indicator" />
+        <div className="guild-pill logo bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25">
           <Logo size="sm" showBorder={false} />
         </div>
         
-        {/* Tooltip */}
-        <div className="absolute left-16 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 
-                      pointer-events-none transition-opacity duration-200">
-          <div className="px-3 py-2 rounded-md whitespace-nowrap text-sm font-medium"
-               style={{ background: 'var(--background-floating)', color: 'var(--text-normal)' }}>
+        {/* Enhanced Tooltip */}
+        <div className="guild-tooltip">
+          <div className="glass-tooltip">
             RSCord
           </div>
         </div>
       </div>
       
-      {/* Separator */}
-      <div className="divider mx-5 mb-4" />
+      {/* Glass Separator */}
+      <div className="glass-divider" />
       
       {/* Home Button */}
       <div className="relative group">
-        <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 bg-white rounded-r transition-all duration-200 
-                      group-hover:h-5 h-2" />
+        <div className={`guild-indicator ${activeGuild === "home" ? "active" : ""}`} />
         <button
           onClick={() => setActiveGuild("home")}
-          className={`guild-pill ${activeGuild === "home" ? "active" : ""}`}
+          className={`guild-pill ${activeGuild === "home" ? "active" : ""} bg-gradient-to-br from-indigo-500 to-blue-600`}
           aria-label="Home"
         >
-          <Home size={24} />
+          <Home size={20} className="text-white" />
         </button>
+        
+        <div className="guild-tooltip">
+          <div className="glass-tooltip">
+            Home
+          </div>
+        </div>
       </div>
       
-      {/* Separator */}
-      <div className="divider mx-5" />
+      {/* Glass Separator */}
+      <div className="glass-divider" />
       
       {/* Guild List */}
       {guilds.map((guild) => (
         <div key={guild.id} className="relative group">
-          <div className="absolute -left-3 top-1/2 -translate-y-1/2 w-1 bg-white rounded-r transition-all duration-200 
-                        group-hover:h-5 h-0" />
+          <div className={`guild-indicator ${activeGuild === guild.id ? "active" : ""}`} />
           <button
             onClick={() => setActiveGuild(guild.id)}
-            className={`guild-pill ${activeGuild === guild.id ? "active" : ""}`}
+            className={`guild-pill ${activeGuild === guild.id ? "active" : ""} bg-gradient-to-br ${guild.color} text-white font-bold`}
             aria-label={guild.name}
           >
-            <span className="text-lg font-semibold">{guild.icon}</span>
+            <span className="text-lg font-extrabold">{guild.icon}</span>
           </button>
           
-          {/* Tooltip */}
-          <div className="absolute left-16 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 
-                        pointer-events-none transition-opacity duration-200">
-            <div className="px-3 py-2 rounded-md whitespace-nowrap text-sm font-medium"
-                 style={{ background: 'var(--background-floating)', color: 'var(--text-normal)' }}>
+          {/* Enhanced Tooltip */}
+          <div className="guild-tooltip">
+            <div className="glass-tooltip">
               {guild.name}
             </div>
           </div>
@@ -78,43 +77,37 @@ export function GuildBar() {
       {/* Add Guild Button */}
       <div className="relative group">
         <button
-          className="guild-pill hover:bg-discord-green"
+          className="guild-pill add-guild bg-gradient-to-br from-green-500 to-emerald-600 text-white hover:from-green-400 hover:to-emerald-500"
           aria-label="Add a Server"
         >
-          <Plus size={24} className="text-discord-green group-hover:text-white" />
+          <Plus size={20} className="text-white" />
         </button>
         
-        {/* Tooltip */}
-        <div className="absolute left-16 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 
-                      pointer-events-none transition-opacity duration-200">
-          <div className="px-3 py-2 rounded-md whitespace-nowrap text-sm font-medium"
-               style={{ background: 'var(--background-floating)', color: 'var(--text-normal)' }}>
+        <div className="guild-tooltip">
+          <div className="glass-tooltip">
             Добавить сервер
           </div>
         </div>
       </div>
       
-      {/* Separator */}
-      <div className="divider mx-5" />
+      {/* Glass Separator */}
+      <div className="glass-divider" />
       
       {/* Explore Public Servers */}
       <div className="relative group">
         <button
-          className="guild-pill hover:bg-discord-green"
+          className="guild-pill explore-guild bg-gradient-to-br from-purple-500 to-pink-600 text-white hover:from-purple-400 hover:to-pink-500"
           aria-label="Explore Public Servers"
         >
-          <Compass size={24} className="text-discord-green group-hover:text-white" />
+          <Compass size={20} className="text-white" />
         </button>
         
-        {/* Tooltip */}
-        <div className="absolute left-16 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 
-                      pointer-events-none transition-opacity duration-200">
-          <div className="px-3 py-2 rounded-md whitespace-nowrap text-sm font-medium"
-               style={{ background: 'var(--background-floating)', color: 'var(--text-normal)' }}>
+        <div className="guild-tooltip">
+          <div className="glass-tooltip">
             Исследовать сервера
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

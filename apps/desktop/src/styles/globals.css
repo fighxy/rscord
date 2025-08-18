@@ -2,50 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Discord-like color system */
+/* Import glassmorphism styles */
+@import './glassmorphism.css';
+
+/* Modern font imports */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* Enhanced Discord-like color system with glassmorphism */
 @layer base {
   :root {
-    /* Main backgrounds */
-    --discord-darker: #202225;
-    --discord-dark: #2f3136;
-    --discord-lighter-dark: #36393f;
-    --discord-light: #40444b;
+    /* Main backgrounds - now with glassmorphism support */
+    --discord-darker: #1a1d21;
+    --discord-dark: #2b2d31;
+    --discord-lighter-dark: #35373c;
+    --discord-light: #404249;
     
-    /* Brand colors */
+    /* Brand colors - enhanced */
     --discord-blurple: #5865f2;
-    --discord-green: #3ba55d;
-    --discord-yellow: #fee75c;
+    --discord-green: #23a55a;
+    --discord-yellow: #f0b232;
     --discord-fuchsia: #eb459e;
-    --discord-red: #ed4245;
+    --discord-red: #da373c;
     
-    /* Text colors */
-    --text-normal: #dcddde;
-    --text-muted: #72767d;
-    --text-link: #00b0f4;
-    --header-primary: #fff;
-    --header-secondary: #b9bbbe;
+    /* Glassmorphism variables */
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-bg-hover: rgba(255, 255, 255, 0.12);
+    --glass-bg-active: rgba(255, 255, 255, 0.18);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-border-hover: rgba(255, 255, 255, 0.25);
     
-    /* Interactive elements */
-    --interactive-normal: #b9bbbe;
-    --interactive-hover: #dcddde;
-    --interactive-active: #fff;
-    --interactive-muted: #4f545c;
+    /* Modern text colors */
+    --text-primary: #f2f3f5;
+    --text-secondary: #b5bac1;
+    --text-muted: #80848e;
+    --text-disabled: #6d6f78;
+    --text-link: #00a8fc;
+    --text-link-hover: #00c9fd;
     
-    /* Background modifiers */
-    --background-primary: #36393f;
-    --background-secondary: #2f3136;
-    --background-secondary-alt: #292b2f;
-    --background-tertiary: #202225;
-    --background-accent: #4f545c;
-    --background-floating: #18191c;
+    /* Interactive elements - enhanced */
+    --interactive-normal: #b5bac1;
+    --interactive-hover: #dbdee1;
+    --interactive-active: #f2f3f5;
+    --interactive-muted: #4e5058;
     
-    /* Borders and inputs */
-    --border-color: #202225;
-    --input-background: #40444b;
+    /* Background modifiers - with glassmorphism */
+    --background-primary: #1e1f22;
+    --background-secondary: #2b2d31;
+    --background-secondary-alt: #313338;
+    --background-tertiary: #383a40;
+    --background-accent: #4e5058;
+    --background-floating: #111214;
+    
+    /* Enhanced shadows */
+    --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.5);
+    --shadow-elevation: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    
+    /* Modern transitions */
+    --transition-glass: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-fast: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-slow: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
 
-/* Base reset and setup */
+/* Base reset and setup - enhanced */
 * {
   margin: 0;
   padding: 0;
@@ -59,11 +79,13 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Whitney', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--background-tertiary);
-  color: var(--text-normal);
+  background: var(--background-primary);
+  color: var(--text-primary);
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
 /* Disable text selection globally except inputs */
@@ -81,10 +103,10 @@ input, textarea, [contenteditable="true"] {
   user-select: text !important;
 }
 
-/* Hide scrollbars but keep functionality */
+/* Enhanced scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--background-tertiary) transparent;
+  scrollbar-color: var(--glass-bg) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -97,170 +119,589 @@ input, textarea, [contenteditable="true"] {
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: var(--background-tertiary);
-  border-radius: 4px;
+  background: linear-gradient(180deg, var(--glass-bg), var(--glass-bg-hover));
+  border-radius: 10px;
   border: 2px solid transparent;
-  background-clip: padding-box;
+  background-clip: content-box;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background-color: var(--background-accent);
+  background: linear-gradient(180deg, var(--glass-bg-hover), var(--glass-bg-active));
+  background-clip: content-box;
 }
 
-/* Custom component classes */
+/* Enhanced component classes */
 @layer components {
-  /* Layout components */
-  .app-container {
-    @apply flex h-screen w-full overflow-hidden;
+  /* App Shell Layout */
+  .app-shell-container {
+    @apply relative h-screen w-full overflow-hidden;
   }
   
-  .guild-bar {
-    @apply w-[72px] flex flex-col items-center py-3 space-y-2;
-    background: var(--background-tertiary);
+  .app-background {
+    @apply fixed inset-0 z-0;
+    background: 
+      linear-gradient(135deg, #1e1f22 0%, #2b2d31 50%, #1e1f22 100%),
+      radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at center, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
   }
   
-  .channel-sidebar {
-    @apply w-60 flex flex-col;
-    background: var(--background-secondary);
+  .app-content {
+    @apply relative z-10 flex h-screen w-full gap-2 p-2;
   }
   
-  .chat-area {
-    @apply flex-1 flex flex-col;
-    background: var(--background-primary);
+  .guild-bar-wrapper {
+    @apply flex-shrink-0;
   }
   
-  .member-list {
-    @apply w-60;
-    background: var(--background-secondary);
+  .channel-sidebar-wrapper {
+    @apply flex-shrink-0;
   }
   
-  /* Guild pill */
+  .chat-area-wrapper {
+    @apply flex-1;
+  }
+  
+  .member-list-wrapper {
+    @apply flex-shrink-0;
+  }
+
+  /* Guild Bar Components */
+  .guild-bar-container {
+    @apply w-20 flex flex-col items-center py-4 gap-3;
+  }
+  
   .guild-pill {
-    @apply w-12 h-12 rounded-[24px] flex items-center justify-center cursor-pointer transition-all duration-200;
-    background: var(--background-primary);
+    @apply w-14 h-14 rounded-full flex items-center justify-center cursor-pointer relative overflow-hidden font-bold text-lg;
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-glass);
+    box-shadow: var(--shadow-glass);
+  }
+  
+  .guild-pill::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s ease;
+  }
+  
+  .guild-pill:hover::before {
+    left: 100%;
   }
   
   .guild-pill:hover {
-    @apply rounded-[16px];
-    background: var(--discord-blurple);
+    @apply rounded-2xl;
+    background: var(--glass-bg-hover);
+    border-color: var(--glass-border-hover);
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: var(--shadow-glass), var(--shadow-glow);
   }
   
   .guild-pill.active {
-    @apply rounded-[16px];
-    background: var(--discord-blurple);
-  }
-  
-  /* Channel items */
-  .channel-item {
-    @apply flex items-center px-2 mx-2 py-1 rounded cursor-pointer;
-    color: var(--interactive-normal);
-  }
-  
-  .channel-item:hover {
-    background: var(--background-accent);
-    color: var(--interactive-hover);
-  }
-  
-  .channel-item.active {
-    background: var(--background-accent);
-    color: var(--interactive-active);
-  }
-  
-  /* Message components */
-  .message-container {
-    @apply flex px-4 py-0.5 hover:bg-black/5;
-  }
-  
-  .message-input {
-    @apply w-full px-4 py-3 rounded-lg;
-    background: var(--input-background);
-    color: var(--text-normal);
-    border: none;
-    outline: none;
-  }
-  
-  .message-input:focus {
-    outline: none;
-  }
-  
-  /* Buttons */
-  .btn-primary {
-    @apply px-4 py-2 rounded font-medium transition-colors;
-    background: var(--discord-blurple);
-    color: white;
-  }
-  
-  .btn-primary:hover {
-    background: #4752c4;
-  }
-  
-  .btn-primary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  /* Forms */
-  .form-input {
-    @apply w-full px-3 py-2 rounded;
-    background: var(--input-background);
-    border: 1px solid var(--border-color);
-    color: var(--text-normal);
-    outline: none;
-  }
-  
-  .form-input:focus {
+    @apply rounded-2xl;
+    background: var(--glass-bg-active);
     border-color: var(--discord-blurple);
+    box-shadow: var(--shadow-glass), 0 0 30px rgba(88, 101, 242, 0.4);
   }
   
-  /* Utility classes */
+  .guild-indicator {
+    @apply absolute -left-2 w-1 bg-white rounded-r transition-all duration-300 ease-out;
+    height: 0;
+    background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  }
+  
+  .guild-pill:hover .guild-indicator {
+    height: 24px;
+  }
+  
+  .guild-pill.active .guild-indicator,
+  .guild-indicator.active {
+    height: 48px;
+  }
+  
+  .guild-tooltip {
+    @apply absolute left-16 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50;
+  }
+  
+  .glass-tooltip {
+    @apply px-3 py-2 rounded-lg whitespace-nowrap text-sm font-medium text-white;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-divider {
+    @apply w-10 h-0.5 mx-auto my-2;
+    background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
+    border-radius: 1px;
+  }
+
+  /* Channel Sidebar Components */
+  .glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass);
+    transition: var(--transition-glass);
+  }
+  
+  .glass-panel-header {
+    @apply h-16 px-6 flex items-center justify-between border-b border-white/10 backdrop-filter backdrop-blur-md cursor-pointer group;
+    transition: var(--transition-fast);
+  }
+  
+  .glass-panel-header:hover {
+    background: var(--glass-bg-hover);
+  }
+  
+  .glass-category-header {
+    @apply flex items-center justify-between px-3 py-2 cursor-pointer group rounded-xl;
+    transition: var(--transition-fast);
+  }
+  
+  .glass-category-header:hover {
+    background: var(--glass-bg);
+  }
+  
+  .glass-channel-item {
+    @apply flex items-center justify-between px-3 py-2 rounded-2xl cursor-pointer group relative overflow-hidden;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: var(--transition-fast);
+  }
+  
+  .glass-channel-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--glass-bg);
+    opacity: 0;
+    transition: var(--transition-fast);
+    border-radius: inherit;
+  }
+  
+  .glass-channel-item:hover::before {
+    opacity: 1;
+  }
+  
+  .glass-channel-item:hover {
+    color: var(--text-primary);
+    transform: translateX(4px);
+  }
+  
+  .glass-channel-item.active {
+    color: var(--text-primary);
+    background: var(--glass-bg-active);
+    box-shadow: inset 0 0 0 1px var(--glass-border);
+  }
+  
+  .glass-channel-item.voice-active {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #22c55e;
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+  }
+  
+  .glass-member-count {
+    @apply px-2 py-1 rounded-lg text-xs font-bold text-white/80;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+  }
+  
+  .glass-unread-badge {
+    @apply px-2 py-1 rounded-full text-xs font-bold text-white bg-red-500;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  }
+  
+  .glass-user-panel {
+    @apply h-18 px-6 py-4 flex items-center justify-between border-t border-white/10 backdrop-filter backdrop-blur-md;
+  }
+  
+  .glass-icon-button {
+    @apply w-8 h-8 rounded-xl flex items-center justify-center cursor-pointer;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-fast);
+  }
+  
+  .glass-icon-button:hover {
+    background: var(--glass-bg-hover);
+    transform: scale(1.1);
+  }
+
+  /* Chat Components */
+  .glass-chat-header {
+    @apply h-16 px-6 flex items-center justify-between border-b border-white/10 backdrop-filter backdrop-blur-md;
+  }
+  
+  .glass-message-container {
+    @apply flex gap-4 p-4 transition-all duration-200 rounded-2xl;
+  }
+  
+  .glass-message-container:hover {
+    background: var(--glass-bg);
+    margin: 0 -24px;
+    padding: 16px 24px;
+  }
+  
+  .glass-message-avatar {
+    @apply w-11 h-11 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .glass-author-name {
+    @apply font-bold cursor-pointer transition-all duration-200;
+  }
+  
+  .glass-author-name:hover {
+    text-decoration: underline;
+  }
+  
+  .glass-role-badge {
+    @apply px-2 py-1 rounded-lg text-xs font-bold text-white/80;
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+  }
+  
+  .glass-message-content {
+    @apply text-white text-base leading-relaxed;
+    word-wrap: break-word;
+  }
+  
+  .glass-reaction-button {
+    @apply flex items-center px-2 py-1 rounded-lg cursor-pointer;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-fast);
+  }
+  
+  .glass-reaction-button:hover {
+    background: var(--glass-bg-hover);
+    transform: scale(1.05);
+  }
+  
+  .glass-add-reaction-button {
+    @apply w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer text-white/60 hover:text-white font-bold;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-fast);
+  }
+  
+  .glass-add-reaction-button:hover {
+    background: var(--glass-bg-hover);
+    transform: scale(1.1);
+  }
+  
+  .glass-typing-indicator {
+    @apply px-4 py-2 rounded-2xl;
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+  }
+  
+  .glass-message-input-wrapper {
+    @apply flex items-center gap-3 p-4 rounded-2xl;
+    background: var(--glass-bg);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-glass);
+    transition: var(--transition-fast);
+  }
+  
+  .glass-message-input-wrapper:focus-within {
+    border-color: var(--discord-blurple);
+    box-shadow: var(--shadow-glass), 0 0 20px rgba(88, 101, 242, 0.3);
+  }
+  
+  .glass-message-input {
+    @apply flex-1 bg-transparent border-none outline-none text-white font-medium;
+    font-size: 16px;
+  }
+  
+  .glass-message-input::placeholder {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  
+  .glass-input-action {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer;
+    transition: var(--transition-fast);
+  }
+  
+  .glass-input-action:hover {
+    background: var(--glass-bg-hover);
+    transform: scale(1.1);
+  }
+  
+  .glass-send-button {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer;
+    background: linear-gradient(135deg, var(--discord-blurple), #7c3aed);
+    transition: var(--transition-fast);
+    box-shadow: 0 0 20px rgba(88, 101, 242, 0.4);
+  }
+  
+  .glass-send-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(88, 101, 242, 0.6);
+  }
+
+  /* Member List Components */
+  .glass-member-list-header {
+    @apply h-16 px-6 flex items-center border-b border-white/10 backdrop-filter backdrop-blur-md;
+  }
+  
+  .glass-member-section-header {
+    @apply px-3 py-2;
+  }
+  
+  .glass-member-item {
+    @apply flex items-center justify-between px-3 py-2 rounded-2xl cursor-pointer group;
+    transition: var(--transition-fast);
+  }
+  
+  .glass-member-item:hover {
+    background: var(--glass-bg);
+    transform: translateX(4px);
+  }
+  
+  .glass-member-item.offline {
+    opacity: 0.5;
+  }
+  
+  .glass-member-avatar {
+    @apply w-9 h-9 rounded-full flex items-center justify-center font-bold text-white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+  
+  .glass-status-indicator {
+    @apply absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-black/20;
+    box-shadow: 0 0 8px currentColor;
+  }
+  
+  .glass-voice-status {
+    @apply absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+  }
+  
+  .glass-activity-text {
+    @apply text-white/60 text-sm truncate mt-1;
+  }
+  
+  .glass-member-action {
+    @apply w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-fast);
+  }
+  
+  .glass-member-action:hover {
+    background: var(--glass-bg-hover);
+    transform: scale(1.1);
+  }
+  
+  .glass-member-list-footer {
+    @apply h-14 px-6 py-3 border-t border-white/10 backdrop-filter backdrop-blur-md;
+  }
+  
+  .glass-footer-button {
+    @apply flex items-center gap-2 px-4 py-2 rounded-2xl cursor-pointer w-full;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    transition: var(--transition-fast);
+  }
+  
+  .glass-footer-button:hover {
+    background: var(--glass-bg-hover);
+    transform: translateY(-2px);
+  }
+
+  /* Utility classes - enhanced */
   .text-muted {
     color: var(--text-muted);
   }
   
   .text-header {
-    color: var(--header-primary);
-  }
-  
-  .divider {
-    @apply h-[1px] w-full;
-    background: var(--background-accent);
+    color: var(--text-primary);
+    font-weight: 600;
   }
 }
 
-/* Discord-specific animations */
+/* Enhanced Discord-specific animations */
 @keyframes discord-pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.4; }
-  100% { opacity: 1; }
+  0%, 70%, 100% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+  35% { 
+    transform: scale(0.85); 
+    opacity: 0.7; 
+  }
+}
+
+@keyframes voice-pulse {
+  0%, 100% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+  50% { 
+    transform: scale(1.1); 
+    opacity: 0.8; 
+  }
+}
+
+@keyframes glass-shine {
+  0% { 
+    transform: translateX(-100%) skewX(-15deg); 
+    opacity: 0; 
+  }
+  50% { 
+    opacity: 1; 
+  }
+  100% { 
+    transform: translateX(200%) skewX(-15deg); 
+    opacity: 0; 
+  }
 }
 
 .animate-discord-pulse {
   animation: discord-pulse 1.5s ease-in-out infinite;
 }
 
-/* Voice channel indicators */
+.animate-voice-pulse {
+  animation: voice-pulse 2s ease-in-out infinite;
+}
+
+.animate-glass-shine {
+  animation: glass-shine 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Voice channel indicators - enhanced */
 .voice-indicator {
-  @apply w-2 h-2 rounded-full;
+  @apply w-3 h-3 rounded-full relative;
   background: var(--discord-green);
+  box-shadow: 0 0 10px rgba(35, 165, 90, 0.5);
 }
 
 .voice-indicator.speaking {
-  box-shadow: 0 0 0 2px rgba(59, 165, 93, 0.3);
+  animation: voice-pulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(35, 165, 90, 0.8);
 }
 
-/* Status indicators */
+.voice-indicator.muted {
+  background: var(--discord-red);
+  box-shadow: 0 0 10px rgba(218, 55, 60, 0.5);
+}
+
+/* Status indicators - enhanced */
 .status-online {
   background: var(--discord-green);
+  box-shadow: 0 0 8px rgba(35, 165, 90, 0.5);
 }
 
 .status-idle {
   background: var(--discord-yellow);
+  box-shadow: 0 0 8px rgba(240, 178, 50, 0.5);
 }
 
 .status-dnd {
   background: var(--discord-red);
+  box-shadow: 0 0 8px rgba(218, 55, 60, 0.5);
 }
 
 .status-offline {
   background: var(--text-muted);
+  box-shadow: 0 0 8px rgba(128, 132, 142, 0.5);
+}
+
+/* Responsive enhancements */
+@media (max-width: 1200px) {
+  .member-list-wrapper {
+    display: none;
+  }
+  
+  .chat-area-wrapper {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-content {
+    gap: 4px;
+    padding: 4px;
+  }
+  
+  .guild-bar-container {
+    width: 64px;
+    padding: 12px 0;
+  }
+  
+  .guild-pill {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+  }
+  
+  .channel-sidebar-wrapper {
+    width: 240px;
+  }
+  
+  .glass-message-container {
+    padding: 4px 16px;
+  }
+  
+  .glass-message-input {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: high) {
+  :root {
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-border-hover: rgba(255, 255, 255, 0.5);
+  }
+  
+  .guild-pill,
+  .glass-channel-item,
+  .glass-message-input,
+  .glass-member-item {
+    border-width: 2px;
+  }
+}
+
+/* Focus improvements for keyboard navigation */
+.guild-pill:focus,
+.glass-channel-item:focus,
+.glass-message-input:focus,
+.glass-member-item:focus,
+.glass-icon-button:focus {
+  outline: 2px solid var(--discord-blurple);
+  outline-offset: 2px;
 }

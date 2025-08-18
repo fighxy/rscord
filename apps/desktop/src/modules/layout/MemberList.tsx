@@ -1,122 +1,228 @@
-import { Crown, Shield } from "lucide-react";
+import { Crown, Shield, Users, Mic, MicOff, HeadphonesIcon, Settings } from "lucide-react";
+import { useState } from "react";
 
-interface MemberListProps {
-  guildId: string;
+interface Member {
+  id: string;
+  name: string;
+  avatar: string;
+  status: 'online' | 'idle' | 'dnd' | 'offline';
+  role?: string;
+  roleColor?: string;
+  activity?: string;
+  isInVoice?: boolean;
+  isMuted?: boolean;
+  isDeafened?: boolean;
 }
 
-export function MemberList({ guildId }: MemberListProps) {
-  // Mock members data - replace with real data
-  const members = {
-    online: [
-      { id: "1", name: "Admin", role: "admin", status: "online" },
-      { id: "2", name: "Moderator", role: "moderator", status: "idle" },
-      { id: "3", name: "Alice", role: "member", status: "online" },
-      { id: "4", name: "Bob", role: "member", status: "dnd" },
-    ],
-    offline: [
-      { id: "5", name: "Charlie", role: "member", status: "offline" },
-      { id: "6", name: "David", role: "member", status: "offline" },
-    ],
-  };
+export function MemberList() {
+  const [members] = useState<Member[]>([
+    {
+      id: "1",
+      name: "Alice",
+      avatar: "A",
+      status: "online",
+      role: "Admin",
+      roleColor: "from-red-500 to-pink-600",
+      activity: "Coding RSCORD",
+      isInVoice: true,
+    },
+    {
+      id: "2", 
+      name: "Bob",
+      avatar: "B",
+      status: "online", 
+      role: "Developer",
+      roleColor: "from-blue-500 to-purple-600",
+      activity: "Listening to Spotify",
+      isInVoice: true,
+      isMuted: true,
+    },
+    {
+      id: "3",
+      name: "Charlie", 
+      avatar: "C",
+      status: "idle",
+      role: "Designer",
+      roleColor: "from-green-500 to-teal-600",
+      activity: "Away",
+      isInVoice: true,
+    },
+    {
+      id: "4",
+      name: "Diana",
+      avatar: "D", 
+      status: "dnd",
+      role: "Moderator",
+      roleColor: "from-orange-500 to-red-600",
+      activity: "Do not disturb",
+    },
+    {
+      id: "5",
+      name: "Elena",
+      avatar: "E",
+      status: "online",
+      activity: "Playing Cyberpunk 2077",
+    },
+    {
+      id: "6",
+      name: "Frank", 
+      avatar: "F",
+      status: "offline",
+    },
+  ]);
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case "admin":
-        return <Crown size={14} className="text-yellow-500" />;
-      case "moderator":
-        return <Shield size={14} className="text-blue-500" />;
-      default:
-        return null;
-    }
-  };
+  const onlineMembers = members.filter(m => m.status !== 'offline');
+  const offlineMembers = members.filter(m => m.status === 'offline');
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "online":
-        return "var(--discord-green)";
-      case "idle":
-        return "var(--discord-yellow)";
-      case "dnd":
-        return "var(--discord-red)";
-      default:
-        return "var(--text-muted)";
+      case 'online': return 'bg-green-500 shadow-green-500/50';
+      case 'idle': return 'bg-yellow-500 shadow-yellow-500/50';
+      case 'dnd': return 'bg-red-500 shadow-red-500/50';
+      case 'offline': return 'bg-gray-500 shadow-gray-500/50';
+      default: return 'bg-gray-500';
     }
   };
 
-  const MemberItem = ({ member }: { member: any }) => (
-    <div className="flex items-center px-2 py-1.5 mx-2 rounded cursor-pointer hover:bg-background-accent/50 group">
-      {/* Avatar with status */}
-      <div className="relative mr-3">
-        <div className="w-8 h-8 rounded-full bg-discord-blurple flex items-center justify-center">
-          <span className="text-xs font-semibold text-white">
-            {member.name[0].toUpperCase()}
-          </span>
-        </div>
-        {/* Status indicator */}
-        <div 
-          className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
-          style={{ 
-            backgroundColor: getStatusColor(member.status),
-            borderColor: 'var(--background-secondary)'
-          }}
-        />
-      </div>
-      
-      {/* Name and role */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1">
-          {getRoleIcon(member.role)}
-          <span className={`text-sm font-medium truncate ${
-            member.status === "offline" ? "opacity-50" : ""
-          }`}>
-            {member.name}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (!guildId) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-muted text-sm">Выберите сервер</p>
-      </div>
-    );
-  }
+  const getRoleIcon = (role?: string) => {
+    switch (role) {
+      case 'Admin': return <Crown size={14} className="text-red-400" />;
+      case 'Moderator': return <Shield size={14} className="text-orange-400" />;
+      default: return null;
+    }
+  };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Members Header */}
-      <div className="h-12 px-4 flex items-center"
-           style={{ borderBottom: '1px solid var(--background-tertiary)' }}>
-        <span className="font-semibold text-sm">Участники</span>
-      </div>
-
-      {/* Members List */}
-      <div className="flex-1 overflow-y-auto py-2">
-        {/* Online Members */}
-        {members.online.length > 0 && (
-          <div className="mb-4">
-            <h3 className="px-4 py-1 text-xs font-semibold uppercase text-muted">
-              В сети — {members.online.length}
-            </h3>
-            {members.online.map(member => (
-              <MemberItem key={member.id} member={member} />
-            ))}
+    <div className="glass-panel w-70 h-full overflow-hidden rounded-3xl border border-white/15 backdrop-blur-xl bg-white/8">
+      <div className="flex flex-col h-full">
+        {/* Header */}
+        <div className="glass-member-list-header">
+          <div className="flex items-center gap-2">
+            <Users size={20} className="text-white/60" />
+            <span className="font-bold text-white">Участники</span>
+            <span className="text-white/60 text-sm ml-auto">{onlineMembers.length} онлайн</span>
           </div>
-        )}
+        </div>
 
-        {/* Offline Members */}
-        {members.offline.length > 0 && (
-          <div>
-            <h3 className="px-4 py-1 text-xs font-semibold uppercase text-muted">
-              Не в сети — {members.offline.length}
-            </h3>
-            {members.offline.map(member => (
-              <MemberItem key={member.id} member={member} />
-            ))}
-          </div>
-        )}
+        {/* Members List */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+          {/* Online Members */}
+          {onlineMembers.length > 0 && (
+            <div className="mb-6">
+              <div className="glass-member-section-header">
+                <span className="text-xs font-bold uppercase tracking-wider text-white/60">
+                  Онлайн — {onlineMembers.length}
+                </span>
+              </div>
+              
+              <div className="space-y-2 mt-3">
+                {onlineMembers.map((member) => (
+                  <div key={member.id} className="glass-member-item group">
+                    <div className="flex items-center gap-3 flex-1">
+                      {/* Avatar with Status */}
+                      <div className="relative flex-shrink-0">
+                        <div className={`glass-member-avatar ${member.roleColor ? `bg-gradient-to-br ${member.roleColor}` : 'bg-gradient-to-br from-gray-500 to-gray-600'}`}>
+                          <span className="text-white font-bold">{member.avatar}</span>
+                        </div>
+                        {/* Status Indicator */}
+                        <div className={`glass-status-indicator ${getStatusColor(member.status)}`}></div>
+                        
+                        {/* Voice Status */}
+                        {member.isInVoice && (
+                          <div className="glass-voice-status">
+                            {member.isMuted ? (
+                              <MicOff size={10} className="text-red-400" />
+                            ) : (
+                              <Mic size={10} className="text-green-400" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Member Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-semibold truncate">{member.name}</span>
+                          {member.role && getRoleIcon(member.role)}
+                        </div>
+                        
+                        {member.activity && (
+                          <div className="glass-activity-text">
+                            {member.activity}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {member.isInVoice && (
+                        <button className="glass-member-action">
+                          <HeadphonesIcon size={14} className="text-white/60 hover:text-white transition-colors" />
+                        </button>
+                      )}
+                      <button className="glass-member-action">
+                        <Settings size={14} className="text-white/60 hover:text-white transition-colors" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Offline Members */}
+          {offlineMembers.length > 0 && (
+            <div>
+              <div className="glass-member-section-header">
+                <span className="text-xs font-bold uppercase tracking-wider text-white/60">
+                  Оффлайн — {offlineMembers.length}
+                </span>
+              </div>
+              
+              <div className="space-y-2 mt-3">
+                {offlineMembers.map((member) => (
+                  <div key={member.id} className="glass-member-item offline group">
+                    <div className="flex items-center gap-3 flex-1">
+                      {/* Avatar with Status */}
+                      <div className="relative flex-shrink-0">
+                        <div className="glass-member-avatar bg-gradient-to-br from-gray-500 to-gray-600 opacity-50">
+                          <span className="text-white font-bold">{member.avatar}</span>
+                        </div>
+                        {/* Status Indicator */}
+                        <div className={`glass-status-indicator ${getStatusColor(member.status)}`}></div>
+                      </div>
+                      
+                      {/* Member Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white/50 font-semibold truncate">{member.name}</span>
+                          {member.role && (
+                            <div className="opacity-50">
+                              {getRoleIcon(member.role)}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="glass-activity-text opacity-50">
+                          Последний раз был онлайн
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="glass-member-list-footer">
+          <button className="glass-footer-button">
+            <Users size={16} className="text-white/60" />
+            <span className="text-white/60 text-sm font-medium">Пригласить</span>
+          </button>
+        </div>
       </div>
     </div>
   );
