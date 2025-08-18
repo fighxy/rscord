@@ -1,0 +1,74 @@
+# LiveKit Server Configuration for RSCORD
+# Production ready setup with Redis and TURN
+
+port: 7880
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 60000
+  
+  # STUN servers for NAT traversal
+  stun_servers:
+    - stun:stun.l.google.com:19302
+    - stun:stun1.l.google.com:19302
+
+  # TURN server configuration (using our coturn container)
+  turn_servers:
+    - host: localhost
+      port: 3478
+      username: rscord
+      credential: rscord123
+      protocol: udp
+
+# Redis for scaling (optional but recommended)
+redis:
+  address: livekit-redis:6379
+
+# API keys for authentication
+keys:
+  APIKey: your-api-key-here  # Will be overridden by environment
+  APISecret: your-api-secret-here
+
+# Room settings
+room:
+  # Auto-create rooms when first participant joins
+  enable_remote_unmute: true
+  
+  # Default room settings
+  max_participants: 50
+  empty_timeout: 300s  # 5 minutes
+  departure_timeout: 20s
+
+# Audio codec preferences
+audio:
+  # Opus is best for voice chat
+  opus_enabled: true
+  opus_red_enabled: true  # Redundancy for packet loss
+  
+# Video codec preferences (for future video chat)
+video:
+  h264_enabled: true
+  vp8_enabled: true
+  vp9_enabled: true
+
+# Development settings (remove in production)
+development: true
+
+# Logging
+log_level: info
+log_file: stdout
+
+# Region (for global deployments)
+region: us-east-1
+
+# Node ID (for clustering)
+node_id: rscord-livekit-01
+
+# Webhook configuration (for room events)
+webhook:
+  # Add your RSCORD backend URL here
+  urls:
+    - http://host.docker.internal:14705/api/voice/webhooks/livekit
+  
+  # API key for webhook authentication  
+  api_key: webhook-secret-key-here

@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --config /etc/livekit.yaml
+    restart: unless-stopped
+    ports:
+      - "7880:7880"    # HTTP API
+      - "7881:7881"    # RTMP
+      - "50000-60000:50000-60000/udp"  # ICE/UDP range
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml
+    environment:
+      - LIVEKIT_KEYS=APIKey: your-api-key, APISecret: your-api-secret
+    depends_on:
+      - redis
+      - livekit-redis
+
+  livekit-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    volumes:
+      - livekit_redis_data:/data
+
+  # TURN server for NAT traversal
+  coturn:
+    image: coturn/coturn:latest
+    restart: unless-stopped
+    ports:
+      - "3478:3478"
+      - "3478:3478/udp"
+      - "5349:5349"
+      - "5349:5349/udp" 
+      - "49152-65535:49152-65535/udp"
+    command: 
+      - -n
+      - --log-file=stdout
+      - --min-port=49152
+      - --max-port=65535
+      - --realm=rscord.local
+      - --server-name=rscord.local
+      - --lt-cred-mech
+      - --user=rscord:rscord123
+      - --external-ip=$$(detect-external-ip)
+    environment:
+      - EXTERNAL_IP=${EXTERNAL_IP:-auto}
+
+volumes:
+  livekit_redis_data:

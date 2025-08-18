@@ -1,17 +1,54 @@
 [package]
 name = "rscord-common"
-version = "0.1.0"
+version = "2.0.0"
 edition = "2021"
+description = "Production-ready common utilities for RSCORD with enhanced security"
 
 [dependencies]
+# Core dependencies
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "1"
 config = { version = "0.14", default-features = false, features = ["toml"] }
 ulid = { version = "1", features = ["serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Database
 mongodb = { version = "3", default-features = false, features = ["sync", "rustls-tls", "compat-3-0-0"] }
 futures-util = "0.3"
-chrono = { version = "0.4", features = ["serde"] }
+
+# Enhanced JWT validation
 jsonwebtoken = "9"
+base64 = "0.21"
 
+# Permission system
+bitflags = "2.4"
 
+# Rate limiting and caching
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+dashmap = "5.5"
+
+# Error recovery and circuit breaker
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.11", features = ["json"] }
+rand = "0.8"
+
+# HTTP framework support
+axum = { version = "0.7", features = ["macros"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors"] }
+
+# Async traits
+async-trait = "0.1"
+
+# Logging
+tracing = "0.1"
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[features]
+default = ["rate-limiting", "circuit-breaker", "enhanced-jwt"]
+rate-limiting = []
+circuit-breaker = []
+enhanced-jwt = []

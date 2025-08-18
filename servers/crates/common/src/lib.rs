@@ -4,6 +4,12 @@ use ulid::Ulid;
 use chrono::{DateTime, Utc};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 
+// Production-ready security and reliability modules
+pub mod enhanced_jwt;
+pub mod permission_checker;
+pub mod rate_limiter;
+pub mod error_recovery;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub bind_addr: Option<String>,
@@ -15,6 +21,12 @@ pub struct AppConfig {
     pub s3_access_key: Option<String>,
     pub s3_secret_key: Option<String>,
     pub jwt_secret: Option<String>,
+    // Enhanced security settings
+    pub jwt_issuer: Option<String>,
+    pub jwt_audience: Option<String>,
+    pub rate_limit_redis_uri: Option<String>,
+    pub enable_rate_limiting: Option<bool>,
+    pub enable_circuit_breaker: Option<bool>,
 }
 
 impl Default for AppConfig {
@@ -29,6 +41,12 @@ impl Default for AppConfig {
             s3_access_key: Some("minioadmin".into()),
             s3_secret_key: Some("minioadmin".into()),
             jwt_secret: Some("dev_secret_change_me".into()),
+            // Enhanced security defaults
+            jwt_issuer: Some("rscord-auth".into()),
+            jwt_audience: Some("rscord-api".into()),
+            rate_limit_redis_uri: Some("redis://127.0.0.1:6379/1".into()),
+            enable_rate_limiting: Some(true),
+            enable_circuit_breaker: Some(true),
         }
     }
 }
@@ -49,7 +67,12 @@ pub fn load_config(env_prefix: &str) -> Result<AppConfig, ConfigError> {
         .set_default("s3_bucket", AppConfig::default().s3_bucket.unwrap())?
         .set_default("s3_access_key", AppConfig::default().s3_access_key.unwrap())?
         .set_default("s3_secret_key", AppConfig::default().s3_secret_key.unwrap())?
-        .set_default("jwt_secret", AppConfig::default().jwt_secret.unwrap())?;
+        .set_default("jwt_secret", AppConfig::default().jwt_secret.unwrap())?
+        .set_default("jwt_issuer", AppConfig::default().jwt_issuer.unwrap())?
+        .set_default("jwt_audience", AppConfig::default().jwt_audience.unwrap())?
+        .set_default("rate_limit_redis_uri", AppConfig::default().rate_limit_redis_uri.unwrap())?
+        .set_default("enable_rate_limiting", AppConfig::default().enable_rate_limiting.unwrap())?
+        .set_default("enable_circuit_breaker", AppConfig::default().enable_circuit_breaker.unwrap())?;
 
     // Optional: load rscord.toml near binary
     if let Ok(toml) = std::fs::read_to_string("rscord.toml") {
@@ -110,6 +133,7 @@ pub struct Claims {
     pub exp: i64,
 }
 
+// Legacy JWT verification (to be replaced with enhanced_jwt)
 pub fn verify_jwt(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
     let mut validation = Validation::new(Algorithm::HS256);
     validation.validate_exp = true;
@@ -117,5 +141,8 @@ pub fn verify_jwt(token: &str, secret: &str) -> Result<Claims, jsonwebtoken::err
     Ok(data.claims)
 }
 
-
-
+// Re-export enhanced modules for easy access
+pub use enhanced_jwt::{EnhancedJwtValidator, JwtValidationError, extract_user_from_headers, extract_user_id_secure};
+pub use permission_checker::{PermissionChecker, require_guild_permission, require_channel_permission, require_guild_owner};
+pub use rate_limiter::{RateLimiter, RateLimitResult, rate_limit_middleware};
+pub use error_recovery::{EnhancedRetryClient, RetryConfig, CircuitBreakerConfig, DatabaseRetryWrapper, HttpRetryWrapper, LiveKitRetryWrapper, HealthCheckManager};
