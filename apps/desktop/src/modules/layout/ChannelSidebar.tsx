@@ -1,4 +1,4 @@
-import { Hash, Volume2, ChevronDown, ChevronRight, Settings, Plus, Crown, Shield } from "lucide-react";
+import { Hash, Volume2, ChevronDown, ChevronRight, Settings, Plus, Crown } from "lucide-react";
 import { useState } from "react";
 
 interface ChannelSidebarProps {
@@ -132,7 +132,7 @@ export function ChannelSidebar({
         ))}
       </div>
 
-      {/* User Panel */}
+      {/* User Panel - без переключателя темы */}
       <div className="glass-user-panel">
         <div className="flex items-center gap-3 flex-1">
           {/* User Avatar */}

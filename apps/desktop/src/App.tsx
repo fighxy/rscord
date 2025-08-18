@@ -17,6 +17,9 @@ import HomePage from './modules/home/HomePage';
 // API Configuration
 import { API_CONFIG } from './config/api';
 
+// Hooks
+import { useContextMenuDisable } from './hooks/useContextMenuDisable';
+
 // Glassmorphism styles
 import './styles/glassmorphism.css';
 
@@ -31,9 +34,18 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+function AppContent() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [serverStatus, setServerStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
+
+  // Enable comprehensive context menu disable
+  useContextMenuDisable({
+    disableContextMenu: true,
+    disableSelection: true,
+    disableDragDrop: true,
+    disableDevTools: true,
+    allowSelectionInInputs: true,
+  });
 
   useEffect(() => {
     // Setup Tauri listeners
@@ -111,29 +123,46 @@ function App() {
   }
 
   return (
+    <div 
+      className="App no-context-menu"
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+      onDrop={(e) => e.preventDefault()}
+      style={{ 
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none'
+      }}
+    >
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: 'var(--background-floating)',
+            color: 'var(--text-normal)',
+            border: '1px solid var(--border-color)',
+          },
+        }}
+      />
+    </div>
+  );
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
           <Router>
-            <div className="App">
-              <Routes>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/" element={<HomePage />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-              <Toaster 
-                position="top-right"
-                toastOptions={{
-                  duration: 4000,
-                  style: {
-                    background: 'var(--background-floating)',
-                    color: 'var(--text-normal)',
-                    border: '1px solid var(--border-color)',
-                  },
-                }}
-              />
-            </div>
+            <AppContent />
           </Router>
         </AuthProvider>
       </ThemeProvider>

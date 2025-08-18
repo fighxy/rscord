@@ -1,6 +1,7 @@
 import { Plus, Home, Compass } from "lucide-react";
 import { useState } from "react";
 import { Logo } from "../../components/ui/Logo";
+import { ThemeToggle } from "../../components/ui/ThemeToggle";
 
 export function GuildBar() {
   const [activeGuild, setActiveGuild] = useState<string>("home");
@@ -13,7 +14,7 @@ export function GuildBar() {
   ];
 
   return (
-    <div className="guild-bar-container flex flex-col items-center py-4 gap-3">
+    <div className="guild-bar-container flex flex-col items-center py-4 gap-3 h-full">
       {/* RSCord Logo */}
       <div className="relative group">
         <div className="guild-indicator" />
@@ -54,57 +55,77 @@ export function GuildBar() {
       <div className="glass-divider" />
       
       {/* Guild List */}
-      {guilds.map((guild) => (
-        <div key={guild.id} className="relative group">
-          <div className={`guild-indicator ${activeGuild === guild.id ? "active" : ""}`} />
+      <div className="flex-1 flex flex-col gap-3 overflow-y-auto">
+        {guilds.map((guild) => (
+          <div key={guild.id} className="relative group">
+            <div className={`guild-indicator ${activeGuild === guild.id ? "active" : ""}`} />
+            <button
+              onClick={() => setActiveGuild(guild.id)}
+              className={`guild-pill ${activeGuild === guild.id ? "active" : ""} bg-gradient-to-br ${guild.color} text-white font-bold`}
+              aria-label={guild.name}
+            >
+              <span className="text-lg font-extrabold">{guild.icon}</span>
+            </button>
+            
+            {/* Enhanced Tooltip */}
+            <div className="guild-tooltip">
+              <div className="glass-tooltip">
+                {guild.name}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+      {/* Bottom Section */}
+      <div className="flex flex-col gap-3 mt-auto">
+        {/* Add Guild Button */}
+        <div className="relative group">
           <button
-            onClick={() => setActiveGuild(guild.id)}
-            className={`guild-pill ${activeGuild === guild.id ? "active" : ""} bg-gradient-to-br ${guild.color} text-white font-bold`}
-            aria-label={guild.name}
+            className="guild-pill add-guild bg-gradient-to-br from-green-500 to-emerald-600 text-white hover:from-green-400 hover:to-emerald-500"
+            aria-label="Add a Server"
           >
-            <span className="text-lg font-extrabold">{guild.icon}</span>
+            <Plus size={20} className="text-white" />
           </button>
           
-          {/* Enhanced Tooltip */}
           <div className="guild-tooltip">
             <div className="glass-tooltip">
-              {guild.name}
+              Добавить сервер
             </div>
           </div>
         </div>
-      ))}
-      
-      {/* Add Guild Button */}
-      <div className="relative group">
-        <button
-          className="guild-pill add-guild bg-gradient-to-br from-green-500 to-emerald-600 text-white hover:from-green-400 hover:to-emerald-500"
-          aria-label="Add a Server"
-        >
-          <Plus size={20} className="text-white" />
-        </button>
         
-        <div className="guild-tooltip">
-          <div className="glass-tooltip">
-            Добавить сервер
+        {/* Explore Public Servers */}
+        <div className="relative group">
+          <button
+            className="guild-pill explore-guild bg-gradient-to-br from-purple-500 to-pink-600 text-white hover:from-purple-400 hover:to-pink-500"
+            aria-label="Explore Public Servers"
+          >
+            <Compass size={20} className="text-white" />
+          </button>
+          
+          <div className="guild-tooltip">
+            <div className="glass-tooltip">
+              Исследовать сервера
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* Glass Separator */}
-      <div className="glass-divider" />
-      
-      {/* Explore Public Servers */}
-      <div className="relative group">
-        <button
-          className="guild-pill explore-guild bg-gradient-to-br from-purple-500 to-pink-600 text-white hover:from-purple-400 hover:to-pink-500"
-          aria-label="Explore Public Servers"
-        >
-          <Compass size={20} className="text-white" />
-        </button>
         
-        <div className="guild-tooltip">
-          <div className="glass-tooltip">
-            Исследовать сервера
+        {/* Glass Separator */}
+        <div className="glass-divider" />
+        
+        {/* Theme Toggle - Positioned at bottom */}
+        <div className="relative group">
+          <ThemeToggle 
+            variant="minimal" 
+            size="md"
+            className="guild-pill theme-toggle"
+          />
+          
+          <div className="guild-tooltip">
+            <div className="glass-tooltip">
+              Переключить тему
+            </div>
           </div>
         </div>
       </div>
