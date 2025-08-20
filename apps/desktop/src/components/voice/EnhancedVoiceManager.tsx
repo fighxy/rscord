@@ -1,12 +1,181 @@
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, AlertCircle, Activity } from 'lucide-react';
+import VoiceChannelList from './VoiceChannelList';
+import EnhancedVoiceRoom from './EnhancedVoiceRoom';
+import useEnhancedVoiceRooms from '@/hooks/useEnhancedVoiceRooms';
+import { VoiceActivationSettings, VoiceMetrics, DEFAULT_VAD_SETTINGS } from './types';
+import { validateVADSettings } from './utils';
+import toast from 'react-hot-toast';
+
+interface EnhancedVoiceManagerProps {
+  guildId: string;
+  userId: string;
+  username: string;
+  className?: string;
+}
+
+export const EnhancedVoiceManager: React.FC<EnhancedVoiceManagerProps> = ({
+  guildId,
+  userId,
+  username, // Used in useEnhancedVoiceRooms hook
+  className,
+}) => {
+  const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false);
+  const [vadSettings, setVadSettings] = useState<VoiceActivationSettings>(DEFAULT_VAD_SETTINGS);
+  const [voiceMetrics, setVoiceMetrics] = useState<VoiceMetrics | null>(null);
+  const [connectionRetries, setConnectionRetries] = useState(0);
+  const [isUpdatingVad, setIsUpdatingVad] = useState(false);
+  
+  const {
+    voiceRooms,
+    currentSession,
+    joinData,
+    isLoading,
+    isCreating,
+    isJoining,
+    isLeaving,
+    createVoiceRoom,
+    joinVoiceRoom,
+    leaveVoiceRoom,
+    deleteVoiceRoom,
+    error,
+  } = useEnhancedVoiceRooms(guildId, userId, username);
+
+  useEffect(() => {
+    // Load VAD settings from localStorage
+    const savedSettings = localStorage.getItem(`voice-settings-${userId}`);
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        if (validateVADSettings(parsed)) {
+          setVadSettings(parsed);
+        }
+      } catch (e) {
+        console.warn('Failed to parse saved VAD settings');
+      }
+    }
+  }, [userId]);
+
+  // Mock voice metrics update (in real implementation, this would come from LiveKit)
+  useEffect(() => {
+    if (currentSession && isVoiceDialogOpen) {
+      const interval = setInterval(() => {
+        setVoiceMetrics({
+          participantCount: Math.floor(Math.random() * 8) + 1,
+          speakingParticipants: Math.floor(Math.random() * 3),
+          connection_quality: ['excellent', 'good', 'poor'][Math.floor(Math.random() * 3)] as any,
+          latency: Math.floor(Math.random() * 100) + 20,
+          packetLoss: Math.random() * 2,
+        });
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [currentSession, isVoiceDialogOpen]);
+
+  const handleCreateChannel = async (name: string) => {
+    try {
+      await createVoiceRoom(name, 'enhanced-channel');
+      toast.success('Enhanced voice channel created');
+    } catch (error) {
+      toast.error('Failed to create enhanced voice channel');
+      handleConnectionError();
+    }
+  };
+
+  const handleJoinChannel = async (channelId: string) => {
+    try {
+      await joinVoiceRoom(channelId);
+      setIsVoiceDialogOpen(true);
+      setConnectionRetries(0);
+    } catch (error) {
+      toast.error('Failed to join enhanced voice channel');
+      handleConnectionError();
+    }
+  };
+
+  const handleLeaveChannel = async () => {
+    try {
+      await leaveVoiceRoom();
+      setIsVoiceDialogOpen(false);
+      setVoiceMetrics(null);
+      setConnectionRetries(0);
+    } catch (error) {
+      toast.error('Failed to leave voice channel');
+    }
+  };
+
+  const handleDeleteChannel = async (channelId: string) => {
+    try {
+      await deleteVoiceRoom(channelId);
+      toast.success('Enhanced voice channel deleted');
+    } catch (error) {
+      toast.error('Failed to delete voice channel');
+    }
+  };
+
+  const handleVoiceRoomError = (error: Error) => {
+    console.error('Enhanced voice room error:', error);
+    handleConnectionError();
+  };
+
+  const handleConnectionError = () => {
+    setConnectionRetries(prev => Math.min(prev + 1, 3));
+  };
+
+  const handleVadSettingsChange = async (newSettings: VoiceActivationSettings) => {
+    if (!validateVADSettings(newSettings)) {
+      toast.error('Invalid VAD settings');
+      return;
+    }
+
+    setIsUpdatingVad(true);
+    try {
+      setVadSettings(newSettings);
+      // Save to localStorage
+      localStorage.setItem(`voice-settings-${userId}`, JSON.stringify(newSettings));
+      
+      // If in a voice session, apply settings immediately
+      if (currentSession) {
+        // In real implementation, this would update the LiveKit settings
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
+      }
+      
+      toast.success('Voice detection settings updated');
+    } catch (error) {
+      toast.error('Failed to update VAD settings');
+    } finally {
+      setIsUpdatingVad(false);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className={className}>
+        <div className="p-4 border border-red-200 bg-red-50 rounded-lg">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <div className="text-red-700">
+            Failed to load enhanced voice channels. 
+            <Button variant="link" className="p-0 h-auto" onClick={() => window.location.reload()}>
+              Try again
+            </Button>
+          </div>
         </div>
       </div>
+    );
+  }
 
+  return (
+    <div className={className}>
       {/* Voice Channels List */}
       <VoiceChannelList
         guildId={guildId}
         userId={userId}
-        channels={voiceRooms}
-        currentUserSession={currentSession}
+        channels={voiceRooms as any}
+        currentUserSession={currentSession as any}
         onJoinChannel={handleJoinChannel}
         onLeaveChannel={handleLeaveChannel}
         onCreateChannel={handleCreateChannel}
@@ -16,7 +185,7 @@
 
       {/* Enhanced Voice Room Dialog */}
       <Dialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[95vh] p-0" hideCloseButton>
+        <DialogContent className="max-w-5xl max-h-[95vh] p-0" showCloseButton={false}>
           <DialogHeader className="p-6 pb-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="flex items-center gap-2">
@@ -48,7 +217,7 @@
                 roomName={joinData.roomName}
                 serverUrl={joinData.serverUrl}
                 token={joinData.token}
-                vadSettings={joinData.vadSettings || vadSettings}
+                vadSettings={vadSettings}
                 onLeave={handleLeaveChannel}
                 onError={handleVoiceRoomError}
               />
@@ -186,9 +355,9 @@
 
       {/* Connection Issues Alert */}
       {connectionRetries > 0 && (
-        <Alert className="mt-4" variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
+        <div className="mt-4 p-4 border border-red-200 bg-red-50 rounded-lg">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <div className="text-red-700">
             Voice service connection unstable. Retrying... ({connectionRetries}/3)
             {connectionRetries >= 3 && (
               <Button 
@@ -199,8 +368,8 @@
                 Refresh Page
               </Button>
             )}
-          </AlertDescription>
-        </Alert>
+          </div>
+        </div>
       )}
     </div>
   );

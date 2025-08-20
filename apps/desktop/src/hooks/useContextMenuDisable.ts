@@ -75,7 +75,7 @@ export const useContextMenuDisable = (options: UseContextMenuDisableOptions = {}
       const disableDragStartHandler = (e: Event) => {
         const target = e.target as HTMLElement;
         // Allow drag for file inputs and elements with drag-allowed class
-        if (target.type === 'file' || target.classList.contains('drag-allowed')) {
+        if ((target as HTMLInputElement).type === 'file' || target.classList.contains('drag-allowed')) {
           return true;
         }
         e.preventDefault();

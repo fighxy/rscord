@@ -98,13 +98,13 @@ export const useEnhancedVoiceRooms = (guildId: string, userId: string, username:
   // Reconnection logic
   const maxRetries = 3;
   const retryDelay = 1000; // 1 second base delay
-  const retryTimeoutRef = useRef<NodeJS.Timeout>();
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get API configuration
   const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:14700';
   const VOICE_API_BASE = `${API_BASE}/api/voice`;
 
-  const getAuthToken = () => {
+  const getAuthToken = (): string => {
     const token = localStorage.getItem('authToken');
     if (!token) {
       toast.error('Authentication required');

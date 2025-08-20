@@ -2,15 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   LiveKitRoom,
   RoomAudioRenderer,
-  ControlBar,
-  ParticipantLoop,
   ParticipantName,
-  AudioTrack,
   DisconnectButton,
   useParticipants,
   useTracks,
   useLocalParticipant,
-  ParticipantTile,
 } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import { Button } from '@/components/ui/button';
@@ -19,7 +15,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Mic, 
   MicOff, 
-  Volume2, 
   VolumeX, 
   Phone, 
   PhoneOff,
@@ -39,24 +34,17 @@ interface VoiceRoomProps {
   onError?: (error: Error) => void;
 }
 
-interface VoiceParticipant {
-  identity: string;
-  name: string;
-  isSpeaking: boolean;
-  isMuted: boolean;
-  isLocal: boolean;
-  connectionQuality: 'excellent' | 'good' | 'poor';
-}
+// VoiceParticipant interface moved to types.ts
 
 export const VoiceRoom: React.FC<VoiceRoomProps> = ({
-  roomId,
+  roomId, // Used for room identification
   roomName,
   serverUrl,
   token,
   onLeave,
   onError,
 }) => {
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(false); // Track connection state
   const [isConnecting, setIsConnecting] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
@@ -131,12 +119,6 @@ export const VoiceRoom: React.FC<VoiceRoomProps> = ({
       onDisconnected={handleDisconnected}
       onError={handleError}
       options={{
-        // Audio settings optimized for voice chat
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
         // Connection settings
         adaptiveStream: true,
         dynacast: true,
@@ -273,8 +255,7 @@ const VoiceParticipantCard: React.FC<VoiceParticipantCardProps> = ({
           </div>
         </div>
 
-        {/* Audio Track */}
-        <AudioTrack participant={participant} />
+        {/* Audio Track - handled by LiveKit automatically */}
       </CardContent>
     </Card>
   );

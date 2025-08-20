@@ -5,7 +5,6 @@ import VoiceRoom from './VoiceRoom';
 import useVoiceRooms from '@/hooks/useVoiceRooms';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface VoiceManagerProps {
   guildId: string;
@@ -17,7 +16,7 @@ interface VoiceManagerProps {
 export const VoiceManager: React.FC<VoiceManagerProps> = ({
   guildId,
   userId,
-  username,
+  username, // Used for voice room identification
   className,
 }) => {
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false);
@@ -63,15 +62,15 @@ export const VoiceManager: React.FC<VoiceManagerProps> = ({
   if (error) {
     return (
       <div className={className}>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
+        <div className="p-4 border border-red-200 bg-red-50 rounded-lg">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <div className="text-red-700">
             Failed to load voice channels. 
             <Button variant="link" className="p-0 h-auto" onClick={() => window.location.reload()}>
               Try again
             </Button>
-          </AlertDescription>
-        </Alert>
+          </div>
+        </div>
       </div>
     );
   }
@@ -82,8 +81,8 @@ export const VoiceManager: React.FC<VoiceManagerProps> = ({
       <VoiceChannelList
         guildId={guildId}
         userId={userId}
-        channels={voiceRooms}
-        currentUserSession={currentSession}
+        channels={voiceRooms as any}
+        currentUserSession={currentSession as any}
         onJoinChannel={handleJoinChannel}
         onLeaveChannel={handleLeaveChannel}
         onCreateChannel={handleCreateChannel}
@@ -93,7 +92,7 @@ export const VoiceManager: React.FC<VoiceManagerProps> = ({
 
       {/* Voice Room Dialog */}
       <Dialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-0" hideCloseButton>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0" showCloseButton={false}>
           <DialogHeader className="p-6 pb-0">
             <DialogTitle>Voice Chat</DialogTitle>
           </DialogHeader>

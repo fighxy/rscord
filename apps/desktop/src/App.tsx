@@ -20,8 +20,8 @@ import { API_CONFIG } from './config/api';
 // Hooks
 import { useContextMenuDisable } from './hooks/useContextMenuDisable';
 
-// Glassmorphism styles
-import './styles/glassmorphism.css';
+// Anthropic Design System
+import './App.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

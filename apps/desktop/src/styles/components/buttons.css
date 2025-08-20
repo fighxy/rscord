@@ -1,0 +1,95 @@
+/* Anthropic-inspired Button Components */
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2 font-semibold text-sm rounded-md transition-all duration-200 ease-out cursor-pointer min-h-[40px] select-none;
+  font-family: var(--font-sans);
+}
+
+.btn:focus-visible {
+  @apply outline-none;
+  box-shadow: var(--shadow-focus);
+}
+
+.btn:disabled {
+  @apply cursor-not-allowed opacity-60;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Primary Button - Anthropic Orange */
+.btn-primary {
+  background: var(--anthropic-orange);
+  color: var(--text-inverse);
+  border: none;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--anthropic-orange-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Secondary Button */
+.btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--interactive-hover);
+  border-color: var(--border-secondary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--interactive-hover);
+  color: var(--text-primary);
+}
+
+/* Button Sizes */
+.btn-sm {
+  @apply px-3 py-1.5 text-xs min-h-[32px];
+}
+
+.btn-lg {
+  @apply px-6 py-3 text-base min-h-[48px];
+}
+
+/* Icon Buttons */
+.btn-icon {
+  @apply p-2 min-h-[40px] w-10 h-10;
+}
+
+.btn-icon-sm {
+  @apply p-1.5 min-h-[32px] w-8 h-8;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+  
+  .btn:hover:not(:disabled) {
+    transform: none;
+  }
+}

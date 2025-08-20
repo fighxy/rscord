@@ -1,0 +1,439 @@
+/* Anthropic-Inspired Design System for RSCORD */
+
+:root {
+  /* Anthropic Color Palette */
+  --anthropic-orange: #ff7a00;
+  --anthropic-orange-light: #ffb366;
+  --anthropic-orange-dark: #cc5500;
+  
+  --anthropic-blue: #0066cc;
+  --anthropic-blue-light: #4d9fff;
+  --anthropic-blue-dark: #004499;
+  
+  --anthropic-warm-white: #fefefe;
+  --anthropic-warm-gray: #f5f5f5;
+  --anthropic-medium-gray: #8a8a8a;
+  --anthropic-dark-gray: #2a2a2a;
+  --anthropic-black: #1a1a1a;
+  
+  /* Typography - Anthropic inspired */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  
+  /* Spacing Scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  
+  /* Shadows - Soft and Natural */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+  --shadow-xl: 0 20px 25px rgba(0,0,0,0.15), 0 10px 10px rgba(0,0,0,0.04);
+  
+  /* Theme Colors */
+  --bg-primary: var(--anthropic-warm-white);
+  --bg-secondary: var(--anthropic-warm-gray);
+  --bg-tertiary: #f8f9fa;
+  
+  --text-primary: var(--anthropic-black);
+  --text-secondary: var(--anthropic-dark-gray);
+  --text-muted: var(--anthropic-medium-gray);
+  
+  --border-light: #e6e6e6;
+  --border-medium: #d1d5db;
+  --border-strong: #9ca3af;
+  
+  --accent-primary: var(--anthropic-orange);
+  --accent-secondary: var(--anthropic-blue);
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] {
+  --bg-primary: #0f0f0f;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #242424;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #e6e6e6;
+  --text-muted: #999999;
+  
+  --border-light: #333333;
+  --border-medium: #404040;
+  --border-strong: #525252;
+}
+
+/* Base Styles - Anthropic Inspired */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-primary);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Scale */
+.text-xs { font-size: 12px; line-height: 1.4; }
+.text-sm { font-size: 14px; line-height: 1.5; }
+.text-base { font-size: 16px; line-height: 1.6; }
+.text-lg { font-size: 18px; line-height: 1.6; }
+.text-xl { font-size: 20px; line-height: 1.5; }
+.text-2xl { font-size: 24px; line-height: 1.4; }
+.text-3xl { font-size: 30px; line-height: 1.3; }
+.text-4xl { font-size: 36px; line-height: 1.2; }
+
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* Color Utilities */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+.text-accent { color: var(--accent-primary); }
+
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-tertiary { background-color: var(--bg-tertiary); }
+
+/* Anthropic Component Styles */
+
+/* Cards - Clean and functional */
+.anthropic-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.anthropic-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-medium);
+}
+
+.anthropic-card-elevated {
+  box-shadow: var(--shadow-lg);
+  border: none;
+}
+
+/* Buttons - Anthropic style */
+.anthropic-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 12px var(--space-lg);
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  outline: none;
+}
+
+.anthropic-btn-primary {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.anthropic-btn-primary:hover {
+  background: var(--anthropic-orange-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.anthropic-btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-medium);
+}
+
+.anthropic-btn-secondary:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-strong);
+}
+
+.anthropic-btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.anthropic-btn-ghost:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Input Fields - Clean and functional */
+.anthropic-input {
+  width: 100%;
+  padding: 12px var(--space-md);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-family: var(--font-primary);
+  font-size: 14px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.anthropic-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.1);
+}
+
+.anthropic-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Navigation - Anthropic style */
+.anthropic-nav {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-light);
+  padding: var(--space-md) var(--space-xl);
+}
+
+.anthropic-nav-item {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.anthropic-nav-item:hover,
+.anthropic-nav-item.active {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Panels - Voice chat specific */
+.anthropic-panel {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.anthropic-panel-header {
+  padding: var(--space-lg);
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-secondary);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.anthropic-panel-content {
+  padding: var(--space-lg);
+}
+
+/* Voice Controls - Anthropic inspired */
+.anthropic-voice-controls {
+  display: flex;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  align-items: center;
+}
+
+.anthropic-voice-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.anthropic-voice-btn.mute {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.anthropic-voice-btn.unmute {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.anthropic-voice-btn.disconnect {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.anthropic-voice-btn:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-md);
+}
+
+/* Status Indicators */
+.anthropic-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.anthropic-status.online {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.anthropic-status.offline {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.anthropic-status.connecting {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.anthropic-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Participant List */
+.anthropic-participant {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.anthropic-participant:hover {
+  background: var(--bg-secondary);
+}
+
+.anthropic-participant-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.anthropic-participant-info {
+  flex: 1;
+}
+
+.anthropic-participant-name {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.anthropic-participant-status {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Animations */
+@keyframes anthropic-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.anthropic-speaking {
+  animation: anthropic-pulse 1.5s ease-in-out infinite;
+}
+
+/* Loading States */
+.anthropic-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+}
+
+.anthropic-loading::after {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .anthropic-card {
+    padding: var(--space-md);
+  }
+  
+  .anthropic-voice-controls {
+    padding: var(--space-md);
+    gap: var(--space-sm);
+  }
+  
+  .anthropic-voice-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.anthropic-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

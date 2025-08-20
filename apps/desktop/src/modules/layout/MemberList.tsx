@@ -14,7 +14,11 @@ interface Member {
   isDeafened?: boolean;
 }
 
-export function MemberList() {
+interface MemberListProps {
+  guildId: string;
+}
+
+export function MemberList({ guildId }: MemberListProps) {
   const [members] = useState<Member[]>([
     {
       id: "1",

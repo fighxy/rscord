@@ -1,4 +1,77 @@
- bg-muted animate-pulse rounded-md"></div>
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Volume2, 
+  Plus, 
+  Users, 
+  Crown, 
+  LogIn, 
+  Trash2, 
+  Mic 
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { VoiceChannel, VoiceSession } from './types';
+
+interface VoiceChannelListProps {
+  guildId: string;
+  userId: string;
+  channels: VoiceChannel[];
+  currentUserSession: VoiceSession | null;
+  onJoinChannel: (channelId: string) => void;
+  onLeaveChannel: () => void;
+  onCreateChannel: (name: string) => void;
+  onDeleteChannel: (channelId: string, channelName: string) => void;
+  isLoading: boolean;
+}
+
+export const VoiceChannelList: React.FC<VoiceChannelListProps> = ({
+  guildId,
+  userId,
+  channels,
+  currentUserSession,
+  onJoinChannel,
+  onLeaveChannel,
+  onCreateChannel,
+  onDeleteChannel,
+  isLoading,
+}) => {
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newChannelName, setNewChannelName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreateChannel = async () => {
+    if (!newChannelName.trim()) return;
+    
+    setIsCreating(true);
+    try {
+      await onCreateChannel(newChannelName.trim());
+      setNewChannelName('');
+      setShowCreateForm(false);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleLeaveChannel = async () => {
+    await onLeaveChannel();
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Volume2 className="w-5 h-5" />
+            Voice Channels
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-muted animate-pulse rounded-md"></div>
             ))}
           </div>
         </CardContent>
@@ -31,7 +104,7 @@
           <Card className="p-3 bg-muted/50">
             <div className="space-y-3">
               <div>
-                <Label htmlFor="channel-name">Channel Name</Label>
+                <label htmlFor="channel-name" className="text-sm font-medium">Channel Name</label>
                 <Input
                   id="channel-name"
                   value={newChannelName}
@@ -103,8 +176,8 @@
                 channel={channel}
                 userId={userId}
                 isCurrentChannel={currentUserSession?.room_id === channel.id}
-                onJoin={() => handleJoinChannel(channel.id)}
-                onDelete={() => handleDeleteChannel(channel.id, channel.name)}
+                onJoin={() => onJoinChannel(channel.id)}
+                onDelete={() => onDeleteChannel(channel.id, channel.name)}
               />
             ))}
           </div>
@@ -150,7 +223,7 @@ const VoiceChannelCard: React.FC<VoiceChannelCardProps> = ({
               )} />
               <span className="font-medium">{channel.name}</span>
               {isOwner && (
-                <Crown className="w-3 h-3 text-yellow-500" title="Channel Owner" />
+                <Crown className="w-3 h-3 text-yellow-500" />
               )}
             </div>
 

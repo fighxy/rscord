@@ -59,22 +59,41 @@ fn get_system_info() -> HashMap<String, String> {
     info.insert("os".to_string(), std::env::consts::OS.to_string());
     info.insert("arch".to_string(), std::env::consts::ARCH.to_string());
     info.insert("family".to_string(), std::env::consts::FAMILY.to_string());
+    
+    // Audio system info (simplified - LiveKit only)
+    info.insert("audio_backend".to_string(), "LiveKit + WebRTC".to_string());
+    info.insert("voice_system".to_string(), "LiveKit Server".to_string());
+    
     info
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Initialize logging
+    env_logger::init();
+    
+    log::info!("Starting RSCORD Desktop Application");
+    log::info!("Audio system: LiveKit with WebRTC");
+    
     tauri::Builder::default()
         .manage(Storage::default())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            // Storage commands
             get_storage,
             set_storage,
             remove_storage,
             clear_storage,
+            
+            // System commands
             check_server_status,
             get_system_info
         ])
+        .setup(|app| {
+            log::info!("RSCORD Desktop setup completed");
+            log::info!("Voice communication via LiveKit ready");
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
