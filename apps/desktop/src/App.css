@@ -8,7 +8,7 @@
 
 /* Claude/Anthropic Design System Variables */
 :root {
-  /* Core colors inspired by Claude's interface */
+  /* Claude/Anthropic Design System Variables */
   --bg-primary: #f0eee5;        /* Primary background - warm off-white */
   --bg-secondary: #faf9f7;      /* Secondary background */
   --bg-tertiary: #f5f3ed;       /* Tertiary background */
@@ -16,52 +16,86 @@
   --bg-overlay: rgba(255, 255, 255, 0.95);
   --bg-panel: #ffffff;          /* Artifacts panel background */
   
+  /* Background semantic colors */
+  --background-floating: #ffffff;
+  --background-secondary: #faf9f7;
+  --background-modifier-hover: rgba(176, 87, 48, 0.08);
+  --background-modifier-active: rgba(176, 87, 48, 0.12);
+  --background-modifier-selected: rgba(176, 87, 48, 0.06);
+  --background-modifier-accent: rgba(176, 87, 48, 0.1);
+  
   /* Text colors */
+  --text-normal: #1a1a1a;       /* Primary text */
   --text-primary: #1a1a1a;      /* Primary text */
   --text-secondary: #4a4a4a;    /* Secondary text */
   --text-tertiary: #6b6b6b;     /* Tertiary text */
   --text-muted: #8a8a8a;        /* Muted text */
   --text-inverse: #ffffff;      /* Inverse text */
+  --text-positive: #059669;     /* Success text */
+  --text-warning: #d97706;      /* Warning text */
+  --text-danger: #dc2626;       /* Error text */
   
   /* Anthropic brand colors */
+  --anthropic-orange: #b05730;   /* Primary brand color - warm orange-brown */
   --accent-primary: #b05730;     /* Primary CTA - warm orange-brown */
   --accent-primary-hover: #9e4a28;
   --accent-secondary: #6c5dac;   /* Muted purple accent */
   --accent-tertiary: #d97706;    /* Supporting orange */
+  --brand-experiment: #b05730;   /* Experimental features */
   
-  /* Semantic colors */
+  /* Semantic colors with consistent naming */
   --success: #059669;
+  --success-light: rgba(5, 150, 105, 0.1);
   --warning: #d97706;
+  --warning-light: rgba(217, 119, 6, 0.1);
   --error: #dc2626;
+  --error-light: rgba(220, 38, 38, 0.1);
   --info: #2563eb;
+  --info-light: rgba(37, 99, 235, 0.1);
   
   /* Border colors */
+  --border-color: #e5e2d9;
   --border-primary: #e5e2d9;
   --border-secondary: #d1ccc1;
   --border-focus: #b05730;
   --border-muted: #f0eee5;
+  --border-strong: #a8a29e;
   
   /* Interactive states */
+  --interactive-normal: #b05730;
   --interactive-hover: rgba(176, 87, 48, 0.08);
   --interactive-active: rgba(176, 87, 48, 0.12);
+  --interactive-muted: #a8a29e;
   --interactive-disabled: #f5f3ed;
+  --button-secondary-background: transparent;
+  --button-secondary-background-hover: rgba(176, 87, 48, 0.08);
+  --button-secondary-background-active: rgba(176, 87, 48, 0.12);
   
-  /* Shadows - subtle and purposeful */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  /* Shadows - subtle and purposeful like Anthropic */
+  --shadow-sm: 0 1px 3px 0 rgba(176, 87, 48, 0.05), 0 1px 2px 0 rgba(176, 87, 48, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(176, 87, 48, 0.08), 0 2px 4px -1px rgba(176, 87, 48, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(176, 87, 48, 0.08), 0 4px 6px -2px rgba(176, 87, 48, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(176, 87, 48, 0.08), 0 10px 10px -5px rgba(176, 87, 48, 0.04);
   
-  /* Radius - rounded but not overly so */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
+  /* Radius - Anthropic's approachable rounded corners */
+  --radius-sm: 0.5rem;   /* 8px - more generous like Claude */
+  --radius-md: 0.75rem;  /* 12px */
+  --radius-lg: 1rem;     /* 16px */
+  --radius-xl: 1.5rem;   /* 24px */
   
-  /* Typography - Styrene and Tiempos inspired */
+  /* Typography - Anthropic inspired with generous spacing */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
   --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
+  /* Generous spacing system like Anthropic */
+  --spacing-xs: 0.25rem;  /* 4px */
+  --spacing-sm: 0.5rem;   /* 8px */
+  --spacing-md: 1rem;     /* 16px */
+  --spacing-lg: 1.5rem;   /* 24px */
+  --spacing-xl: 2rem;     /* 32px */
+  --spacing-2xl: 3rem;    /* 48px */
+  --spacing-3xl: 4rem;    /* 64px */
 }
 
 /* Dark theme - maintaining warmth even in dark mode */
@@ -73,26 +107,64 @@
   --bg-overlay: rgba(26, 26, 26, 0.95);
   --bg-panel: #242424;
   
+  /* Dark theme paper texture - more subtle */
+  --paper-texture: 
+    radial-gradient(circle at 1px 1px, rgba(230, 126, 34, 0.02) 1px, transparent 0),
+    radial-gradient(circle at 3px 7px, rgba(230, 126, 34, 0.015) 1px, transparent 0),
+    radial-gradient(circle at 7px 3px, rgba(139, 123, 184, 0.015) 1px, transparent 0),
+    radial-gradient(circle at 11px 11px, rgba(230, 126, 34, 0.01) 1px, transparent 0),
+    radial-gradient(circle at 13px 5px, rgba(139, 123, 184, 0.01) 1px, transparent 0);
+  --paper-texture-size: 16px 16px, 24px 24px, 32px 32px, 48px 48px, 64px 64px;
+  
+  --background-floating: #2d2d2d;
+  --background-secondary: #222222;
+  --background-modifier-hover: rgba(230, 126, 34, 0.1);
+  --background-modifier-active: rgba(230, 126, 34, 0.15);
+  --background-modifier-selected: rgba(230, 126, 34, 0.08);
+  --background-modifier-accent: rgba(230, 126, 34, 0.1);
+  
+  --text-normal: #f5f5f5;
   --text-primary: #f5f5f5;
   --text-secondary: #e0e0e0;
   --text-tertiary: #b8b8b8;
   --text-muted: #888888;
   --text-inverse: #1a1a1a;
+  --text-positive: #23a55a;
+  --text-warning: #f39c12;
+  --text-danger: #e74c3c;
   
   /* Maintaining warm accents in dark mode */
+  --anthropic-orange: #e67e22;
   --accent-primary: #e67e22;
   --accent-primary-hover: #d35400;
   --accent-secondary: #8b7bb8;
   --accent-tertiary: #f39c12;
+  --brand-experiment: #e67e22;
   
+  --success: #23a55a;
+  --success-light: rgba(35, 165, 90, 0.1);
+  --warning: #f39c12;
+  --warning-light: rgba(243, 156, 18, 0.1);
+  --error: #e74c3c;
+  --error-light: rgba(231, 76, 60, 0.1);
+  --info: #3498db;
+  --info-light: rgba(52, 152, 219, 0.1);
+  
+  --border-color: #333333;
   --border-primary: #333333;
   --border-secondary: #404040;
   --border-focus: #e67e22;
   --border-muted: #2a2a2a;
+  --border-strong: #666666;
   
+  --interactive-normal: #e67e22;
   --interactive-hover: rgba(230, 126, 34, 0.1);
   --interactive-active: rgba(230, 126, 34, 0.15);
+  --interactive-muted: #888888;
   --interactive-disabled: #2a2a2a;
+  --button-secondary-background: transparent;
+  --button-secondary-background-hover: rgba(230, 126, 34, 0.1);
+  --button-secondary-background-active: rgba(230, 126, 34, 0.15);
   
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
@@ -100,16 +172,38 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
 }
 
-/* Base styles */
+/* Paper texture noise pattern - Anthropic inspired */
+@supports (background: paint(noise)) {
+  :root {
+    --paper-noise: paint(noise);
+  }
+}
+
+/* Fallback noise pattern using CSS */
+:root {
+  --paper-texture: 
+    radial-gradient(circle at 1px 1px, rgba(176, 87, 48, 0.03) 1px, transparent 0),
+    radial-gradient(circle at 3px 7px, rgba(176, 87, 48, 0.02) 1px, transparent 0),
+    radial-gradient(circle at 7px 3px, rgba(108, 93, 172, 0.02) 1px, transparent 0),
+    radial-gradient(circle at 11px 11px, rgba(176, 87, 48, 0.015) 1px, transparent 0),
+    radial-gradient(circle at 13px 5px, rgba(108, 93, 172, 0.015) 1px, transparent 0);
+  --paper-texture-size: 16px 16px, 24px 24px, 32px 32px, 48px 48px, 64px 64px;
+}
+
+/* Base styles - Anthropic's academic rigor approach */
 html, body, #root { 
   height: 100%; 
   margin: 0;
   background: var(--bg-primary); 
+  background-image: var(--paper-texture);
+  background-size: var(--paper-texture-size);
   color: var(--text-primary); 
   font-family: var(--font-family);
   font-feature-settings: 'liga', 'kern';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6; /* Generous line height for readability */
+  letter-spacing: -0.01em; /* Subtle letter spacing */
 }
 
 /* Claude-inspired layout with Artifacts-style split */
@@ -318,6 +412,8 @@ html, body, #root {
 .input, input, textarea {
   width: 100%;
   background: var(--bg-secondary);
+  background-image: var(--paper-texture);
+  background-size: var(--paper-texture-size);
   border: 1px solid var(--border-primary);
   color: var(--text-primary);
   border-radius: var(--radius-lg);
@@ -330,6 +426,7 @@ html, body, #root {
   resize: none;
   min-height: 44px;
   max-height: 120px;
+  position: relative;
   
   /* Allow text selection in inputs */
   -webkit-user-select: text !important;
@@ -505,20 +602,121 @@ html, body, #root {
   outline-offset: 2px;
 }
 
-/* Custom component styles */
+/* Custom component styles - Anthropic inspired */
 @layer components {
   .card {
     background: var(--bg-elevated);
+    background-image: var(--paper-texture);
+    background-size: var(--paper-texture-size);
     border: 1px solid var(--border-muted);
     border-radius: var(--radius-lg);
-    padding: 20px;
+    padding: var(--spacing-xl); /* More generous padding */
     box-shadow: var(--shadow-sm);
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smoother easing */
+    position: relative;
+  }
+  
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: var(--paper-texture);
+    background-size: var(--paper-texture-size);
+    opacity: 0.3;
+    border-radius: var(--radius-lg);
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  .card > * {
+    position: relative;
+    z-index: 2;
   }
   
   .card:hover {
     box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+    transform: translateY(-2px); /* Slightly more lift */
+    border-color: var(--border-secondary);
+  }
+  
+  .card:hover::before {
+    opacity: 0.2;
+  }
+  
+  /* Anthropic-style generous spacing */
+  .space-y-anthropic > * + * {
+    margin-top: var(--spacing-lg);
+  }
+  
+  .section-spacing {
+    padding: var(--spacing-2xl) 0;
+  }
+  
+  /* Academic paper-like content blocks */
+  .content-block {
+    background: var(--bg-elevated);
+    background-image: var(--paper-texture);
+    background-size: var(--paper-texture-size);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--accent-primary);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+  }
+  
+  .content-block::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 2px 2px, rgba(176, 87, 48, 0.04) 1px, transparent 0),
+      radial-gradient(circle at 6px 14px, rgba(176, 87, 48, 0.025) 1px, transparent 0),
+      radial-gradient(circle at 14px 6px, rgba(108, 93, 172, 0.025) 1px, transparent 0);
+    background-size: 20px 20px, 36px 36px, 52px 52px;
+    border-radius: var(--radius-lg);
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  
+  .content-block > * {
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Paper-like modal backgrounds */
+  .modal-paper {
+    background: var(--bg-elevated);
+    background-image: var(--paper-texture);
+    background-size: var(--paper-texture-size);
+    position: relative;
+  }
+  
+  .modal-paper::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 1px 1px, rgba(176, 87, 48, 0.02) 1px, transparent 0),
+      radial-gradient(circle at 5px 9px, rgba(176, 87, 48, 0.015) 1px, transparent 0),
+      radial-gradient(circle at 9px 3px, rgba(108, 93, 172, 0.015) 1px, transparent 0),
+      radial-gradient(circle at 13px 13px, rgba(176, 87, 48, 0.01) 1px, transparent 0);
+    background-size: 18px 18px, 28px 28px, 42px 42px, 60px 60px;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  
+  /* Subtle paper texture for inputs */
+  .input-paper {
+    background-image: 
+      radial-gradient(circle at 1px 1px, rgba(176, 87, 48, 0.015) 1px, transparent 0),
+      radial-gradient(circle at 4px 6px, rgba(108, 93, 172, 0.01) 1px, transparent 0);
+    background-size: 12px 12px, 20px 20px;
   }
   
   .badge {

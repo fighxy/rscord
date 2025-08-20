@@ -685,7 +685,7 @@ pub async fn get_file(
     
     // Placeholder implementation
     Ok(Json(FileInfo {
-        id: file_id,
+        id: file_id.clone(),
         filename: "example.txt".to_string(),
         url: format!("/files/{}", file_id),
         size: 1024,

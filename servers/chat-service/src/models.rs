@@ -129,6 +129,7 @@ pub struct MessageResponse {
 #[derive(Debug, Serialize)]
 pub struct UserInfo {
     pub id: String,
+    pub username: String,
     pub display_name: String,
 }
 
@@ -137,6 +138,7 @@ pub struct User {
     #[serde(rename = "_id")]
     pub id: String,
     pub email: String,
+    pub username: String,
     pub display_name: String,
     pub avatar: Option<String>,
     pub status: Option<UserStatus>,
@@ -153,6 +155,7 @@ pub enum UserStatus {
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateUserRequest {
+    pub username: Option<String>,
     pub display_name: String,
     pub email: String,
 }

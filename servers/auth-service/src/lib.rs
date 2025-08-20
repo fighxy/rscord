@@ -1,6 +1,7 @@
 pub mod handlers;
 pub mod models;
 pub mod app;
+pub mod username_validator;
 
 use axum::Router;
 use mongodb::Client as MongoClient;

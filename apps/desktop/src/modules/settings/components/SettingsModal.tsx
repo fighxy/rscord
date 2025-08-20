@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { X, User, Shield, Bell, Lock, Palette, Mic, Settings } from 'lucide-react';
 import { UserSettings } from './UserSettings';
+import AppearanceSettings from './AppearanceSettings';
+import NotificationSettings from './NotificationSettings';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -52,7 +54,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             
             <div className="card p-6">
               <div className="text-center py-12">
-                <Shield className="w-16 h-16 mx-auto mb-4 text-text-muted" />
+                <Shield className="w-16 h-16 mx-auto mb-4 text-interactive-muted" />
                 <h3 className="text-lg font-medium text-text-primary mb-2">
                   Настройки конфиденциальности
                 </h3>
@@ -65,56 +67,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         );
       
       case 'notifications':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold text-text-primary mb-2">
-                Уведомления
-              </h2>
-              <p className="text-text-secondary mb-6">
-                Настройте способы получения уведомлений
-              </p>
-            </div>
-            
-            <div className="card p-6">
-              <div className="text-center py-12">
-                <Bell className="w-16 h-16 mx-auto mb-4 text-text-muted" />
-                <h3 className="text-lg font-medium text-text-primary mb-2">
-                  Настройки уведомлений
-                </h3>
-                <p className="text-text-secondary">
-                  Эта функция будет доступна в следующих обновлениях
-                </p>
-              </div>
-            </div>
-          </div>
-        );
+        return <NotificationSettings />;
       
       case 'appearance':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold text-text-primary mb-2">
-                Внешний вид
-              </h2>
-              <p className="text-text-secondary mb-6">
-                Настройте темы, размеры и языковые параметры
-              </p>
-            </div>
-            
-            <div className="card p-6">
-              <div className="text-center py-12">
-                <Palette className="w-16 h-16 mx-auto mb-4 text-text-muted" />
-                <h3 className="text-lg font-medium text-text-primary mb-2">
-                  Настройки внешнего вида
-                </h3>
-                <p className="text-text-secondary">
-                  Эта функция будет доступна в следующих обновлениях
-                </p>
-              </div>
-            </div>
-          </div>
-        );
+        return <AppearanceSettings />;
       
       case 'voice':
         return (
@@ -130,7 +86,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             
             <div className="card p-6">
               <div className="text-center py-12">
-                <Mic className="w-16 h-16 mx-auto mb-4 text-text-muted" />
+                <Mic className="w-16 h-16 mx-auto mb-4 text-interactive-muted" />
                 <h3 className="text-lg font-medium text-text-primary mb-2">
                   Настройки голоса и видео
                 </h3>
@@ -156,7 +112,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             
             <div className="card p-6">
               <div className="text-center py-12">
-                <Settings className="w-16 h-16 mx-auto mb-4 text-text-muted" />
+                <Settings className="w-16 h-16 mx-auto mb-4 text-interactive-muted" />
                 <h3 className="text-lg font-medium text-text-primary mb-2">
                   Дополнительные настройки
                 </h3>
@@ -175,7 +131,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden modal-paper">
         {/* Header */}
         <DialogHeader className="px-6 py-4 border-b border-border">
           <div className="flex items-center justify-between">
@@ -195,7 +151,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         <div className="flex flex-1 min-h-0">
           {/* Sidebar */}
-          <div className="w-64 bg-bg-secondary border-r border-border p-4 overflow-y-auto">
+          <div className="w-64 bg-bg-secondary border-r border-border p-4 overflow-y-auto modal-paper">
             <nav className="space-y-1">
               {SETTINGS_TABS.map((tab) => {
                 const Icon = tab.icon;
@@ -208,18 +164,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     className={`
                       w-full text-left px-3 py-2 rounded-lg transition-all duration-200
                       ${isActive 
-                        ? 'bg-anthropic-orange text-white shadow-sm' 
-                        : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
+                        ? 'bg-brand-experiment text-white shadow-sm' 
+                        : 'text-text-secondary hover:text-text-primary hover:bg-background-modifier-hover'
                       }
                     `}
                   >
                     <div className="flex items-center gap-3">
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-text-muted'}`} />
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-interactive-muted'}`} />
                       <div>
                         <div className={`text-sm font-medium ${isActive ? 'text-white' : 'text-text-primary'}`}>
                           {tab.label}
                         </div>
-                        <div className={`text-xs ${isActive ? 'text-orange-100' : 'text-text-muted'}`}>
+                        <div className={`text-xs ${isActive ? 'text-orange-100' : 'text-interactive-muted'}`}>
                           {tab.description}
                         </div>
                       </div>

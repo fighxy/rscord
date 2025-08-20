@@ -128,7 +128,7 @@ impl EnhancedJwtValidator {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum JwtValidationError {
     #[error("Token is empty")]
     EmptyToken,
@@ -207,7 +207,7 @@ pub fn extract_user_from_headers(
     jwt_validator
         .extract_user_info(token)
         .map_err(|e| {
-            let status_code = StatusCode::from(e);
+            let status_code = StatusCode::from(e.clone());
             let message = format!("JWT validation failed: {}", e);
             warn!("JWT validation error: {}", message);
             (status_code, message)

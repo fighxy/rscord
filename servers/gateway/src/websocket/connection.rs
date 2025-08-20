@@ -26,6 +26,7 @@ pub struct ConnectionManager {
 pub struct UserPresence {
     pub user_id: String,
     pub username: String,
+    pub display_name: String,
     pub status: String, // online, idle, dnd, offline
     pub last_seen: chrono::DateTime<chrono::Utc>,
 }
@@ -40,7 +41,7 @@ impl ConnectionManager {
         }
     }
 
-    pub async fn add_connection(&self, user_id: String, username: String) -> broadcast::Receiver<ServerMessage> {
+    pub async fn add_connection(&self, user_id: String, username: String, display_name: String) -> broadcast::Receiver<ServerMessage> {
         let (tx, rx) = broadcast::channel(256);
         
         // Сохраняем connection
@@ -50,6 +51,7 @@ impl ConnectionManager {
         self.presence.insert(user_id.clone(), UserPresence {
             user_id: user_id.clone(),
             username: username.clone(),
+            display_name: display_name.clone(),
             status: "online".to_string(),
             last_seen: chrono::Utc::now(),
         });

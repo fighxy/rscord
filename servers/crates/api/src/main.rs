@@ -21,6 +21,20 @@ use futures_util::StreamExt;
 use password_hash::PasswordHasher;
 use crate::events::EventBus;
 
+fn generate_username_from_display_name(display_name: &str) -> String {
+    let base = display_name
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '_')
+        .collect::<String>();
+    
+    if base.len() >= 3 {
+        base
+    } else {
+        format!("user_{}", ulid::Ulid::new().to_string().to_lowercase()[..8].to_string())
+    }
+}
+
 
 #[tokio::main]
 async fn main() {
@@ -141,7 +155,7 @@ impl AppState {
 }
 
 #[derive(Deserialize)]
-struct RegisterRequest { email: String, display_name: String, password: String }
+struct RegisterRequest { email: String, username: Option<String>, display_name: String, password: String }
 
 #[derive(Serialize)]
 struct RegisterResponse { user: User }
@@ -150,6 +164,7 @@ struct RegisterResponse { user: User }
 struct UserDoc {
     #[serde(rename = "_id")] id: String,
     email: String,
+    username: String,
     display_name: String,
     password_hash: String,
     created_at: chrono::DateTime<chrono::Utc>,
@@ -370,9 +385,16 @@ async fn register(State(state): State<AppState>, Json(body): Json<RegisterReques
         return Err(axum::http::StatusCode::CONFLICT);
     }
     
+    // Generate username if not provided
+    let username = match body.username {
+        Some(u) => u,
+        None => generate_username_from_display_name(&body.display_name),
+    };
+    
     let user = User {
         id: Id(Ulid::new()),
         email: body.email,
+        username: username.clone(),
         display_name: body.display_name,
         created_at: Utc::now(),
     };
@@ -391,6 +413,7 @@ async fn register(State(state): State<AppState>, Json(body): Json<RegisterReques
     let doc = UserDoc {
         id: user.id.0.to_string(),
         email: user.email.clone(),
+        username: user.username.clone(),
         display_name: user.display_name.clone(),
         password_hash,
         created_at: user.created_at,
@@ -429,6 +452,7 @@ async fn get_current_user(State(state): State<AppState>, req: Request<axum::body
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| axum::http::StatusCode::BAD_REQUEST)?),
         email: user_doc.email,
+        username: user_doc.username,
         display_name: user_doc.display_name,
         created_at: user_doc.created_at,
     };

@@ -11,11 +11,12 @@ use rscord_common::{verify_jwt, Id, User};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
-use crate::{AuthState, UserDoc};
+use crate::{AuthState, UserDoc, username_validator::{validate_username, suggest_username}};
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {
     pub email: String,
+    pub username: Option<String>,
     pub display_name: String,
     pub password: String,
 }
@@ -72,6 +73,28 @@ pub struct LogoutResponse {
     pub message: String,
 }
 
+#[derive(Deserialize)]
+pub struct CheckUsernameRequest {
+    pub username: String,
+}
+
+#[derive(Serialize)]
+pub struct CheckUsernameResponse {
+    pub available: bool,
+    pub suggested: Option<String>,
+    pub error: Option<String>,
+}
+
+#[derive(Deserialize)]
+pub struct SuggestUsernameRequest {
+    pub display_name: String,
+}
+
+#[derive(Serialize)]
+pub struct SuggestUsernameResponse {
+    pub suggested: String,
+}
+
 pub async fn register(
     State(state): State<AuthState>,
     Json(body): Json<RegisterRequest>,
@@ -85,17 +108,29 @@ pub async fn register(
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    // Check if user already exists
+    // Validate and process username
+    let username = match body.username {
+        Some(u) => validate_username(&u).map_err(|_| StatusCode::BAD_REQUEST)?,
+        None => suggest_username(&body.display_name),
+    };
+
+    // Check if user already exists (by email or username)
     let users: Collection<UserDoc> = state.mongo.database("rscord").collection("users");
-    let filter = doc! {"email": &body.email};
-    if let Ok(Some(_)) = users.find_one(filter).await {
+    let email_filter = doc! {"email": &body.email};
+    if let Ok(Some(_)) = users.find_one(email_filter).await {
+        return Err(StatusCode::CONFLICT);
+    }
+
+    let username_filter = doc! {"username": &username};
+    if let Ok(Some(_)) = users.find_one(username_filter).await {
         return Err(StatusCode::CONFLICT);
     }
 
     let user = User {
         id: Id(Ulid::new()),
-        email: body.email,
-        display_name: body.display_name,
+        email: body.email.clone(),
+        username: username.clone(),
+        display_name: body.display_name.clone(),
         created_at: Utc::now(),
     };
 
@@ -110,6 +145,7 @@ pub async fn register(
     let doc = UserDoc {
         id: user.id.0.to_string(),
         email: user.email.clone(),
+        username: user.username.clone(),
         display_name: user.display_name.clone(),
         password_hash,
         created_at: user.created_at,
@@ -164,6 +200,7 @@ pub async fn login(
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?),
         email: user_doc.email,
+        username: user_doc.username,
         display_name: user_doc.display_name,
         created_at: user_doc.created_at,
     };
@@ -201,6 +238,7 @@ pub async fn get_current_user(
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
         email: user_doc.email,
+        username: user_doc.username,
         display_name: user_doc.display_name,
         created_at: user_doc.created_at,
     };
@@ -238,6 +276,7 @@ pub async fn verify_token(
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
         email: user_doc.email,
+        username: user_doc.username,
         display_name: user_doc.display_name,
         created_at: user_doc.created_at,
     };
@@ -299,4 +338,74 @@ pub async fn logout() -> Result<Json<LogoutResponse>, StatusCode> {
     Ok(Json(LogoutResponse {
         message: "Successfully logged out".to_string(),
     }))
+}
+
+pub async fn check_username(
+    State(state): State<AuthState>,
+    Json(body): Json<CheckUsernameRequest>,
+) -> Result<Json<CheckUsernameResponse>, StatusCode> {
+    // Validate username format
+    let validated_username = match validate_username(&body.username) {
+        Ok(u) => u,
+        Err(e) => {
+            return Ok(Json(CheckUsernameResponse {
+                available: false,
+                suggested: Some(suggest_username(&body.username)),
+                error: Some(e.to_string()),
+            }));
+        }
+    };
+
+    // Check if username exists in database
+    let users: Collection<UserDoc> = state.mongo.database("rscord").collection("users");
+    let filter = doc! {"username": &validated_username};
+    
+    let exists = users
+        .find_one(filter)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .is_some();
+
+    Ok(Json(CheckUsernameResponse {
+        available: !exists,
+        suggested: if exists { Some(suggest_username(&validated_username)) } else { None },
+        error: None,
+    }))
+}
+
+pub async fn suggest_username_endpoint(
+    Json(body): Json<SuggestUsernameRequest>,
+) -> Result<Json<SuggestUsernameResponse>, StatusCode> {
+    let suggested = suggest_username(&body.display_name);
+    
+    Ok(Json(SuggestUsernameResponse {
+        suggested,
+    }))
+}
+
+pub async fn find_user_by_username(
+    State(state): State<AuthState>,
+    axum::extract::Path(username): axum::extract::Path<String>,
+) -> Result<Json<User>, StatusCode> {
+    let validated_username = validate_username(&username)
+        .map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let users: Collection<UserDoc> = state.mongo.database("rscord").collection("users");
+    let filter = doc! {"username": &validated_username};
+    
+    let user_doc = users
+        .find_one(filter)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let user = User {
+        id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
+        email: user_doc.email,
+        username: user_doc.username,
+        display_name: user_doc.display_name,
+        created_at: user_doc.created_at,
+    };
+
+    Ok(Json(user))
 }

@@ -134,6 +134,7 @@ pub struct UserData {
     pub id: String,
     pub username: String,
     pub email: String,
+    pub display_name: String,
     pub avatar: Option<String>,
 }
 
