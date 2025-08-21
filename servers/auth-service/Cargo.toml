@@ -23,11 +23,9 @@ futures-util = "0.3"
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
 ulid = { version = "1", features = ["serde"] }
-argon2 = "0.5"
 jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"] }
 time = { version = "0.3", features = ["macros"] }
-password-hash = "0.5"
-rand_core = "0.6"
+rand = "0.8"
 radiate-common = { path = "../crates/common" }
 radiate-events = { path = "../crates/events" }
 tower = { version = "0.5", features = ["timeout", "limit"] }

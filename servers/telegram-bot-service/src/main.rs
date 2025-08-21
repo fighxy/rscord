@@ -119,7 +119,7 @@ async fn command_handler(bot: Bot, msg: Message, cmd: Command, state: AppState) 
             
             bot.send_message(
                 msg.chat.id,
-                "👋 Добро пожаловать в RSCord!\n\nВыберите действие:\n\n/register - Зарегистрировать новый аккаунт\n/login - Войти в существующий аккаунт"
+                "👋 Добро пожаловать в Radiate!\n\nВыберите действие:\n\n/register - Зарегистрировать новый аккаунт\n/login - Войти в существующий аккаунт"
             ).await?;
         }
         Command::Register => {
@@ -164,7 +164,7 @@ async fn command_handler(bot: Bot, msg: Message, cmd: Command, state: AppState) 
 async fn combined_handler(bot: Bot, msg: Message, state: AppState) -> ResponseResult<()> {
     // First try to parse as command
     if let Some(text) = msg.text() {
-        if let Ok(cmd) = Command::parse(text, "RSCordBot") {
+        if let Ok(cmd) = Command::parse(text, "RadiateAuth_bot") {
             return command_handler(bot, msg, cmd, state).await;
         }
     }
@@ -200,11 +200,43 @@ async fn message_handler(bot: Bot, msg: Message, state: AppState) -> ResponseRes
                         return Ok(());
                     }
                     Ok(true) => {
-                        session.state = UserState::RegisteringPassword { username: text.to_string() };
-                        bot.send_message(
-                            msg.chat.id,
-                            format!("✅ Username '{}' доступен!\n\nТеперь введите пароль (минимум 6 символов):", text)
-                        ).await?;
+                        let user = msg.from().unwrap();
+                        
+                        // Register user directly via auth-service
+                        match register_user(
+                            user.id.0 as i64, 
+                            text, 
+                            &user.first_name, 
+                            user.username.as_ref().map(|s| s.to_string())
+                        ).await {
+                            Ok(_) => {
+                                // Request auth code for the newly registered user
+                                match request_auth_code(user.id.0 as i64, text).await {
+                                    Ok(code) => {
+                                        session.state = UserState::LoggedInAwaitingCode { username: text.to_string() };
+                                        
+                                        bot.send_message(
+                                            msg.chat.id,
+                                            format!("🎉 Регистрация успешна!\n\n🔑 Ваш код подтверждения:\n\n`{}`\n\nВведите этот код в приложении Radiate.", code)
+                                        ).await?;
+                                    }
+                                    Err(e) => {
+                                        bot.send_message(
+                                            msg.chat.id,
+                                            format!("❌ Ошибка генерации кода: {}\n\nИспользуйте /register для повторной попытки.", e)
+                                        ).await?;
+                                        session.state = UserState::ChoosingAction;
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                session.state = UserState::ChoosingAction;
+                                bot.send_message(
+                                    msg.chat.id,
+                                    format!("❌ Ошибка регистрации: {}\n\nИспользуйте /register для повторной попытки.", e)
+                                ).await?;
+                            }
+                        }
                     }
                     Err(_) => {
                         bot.send_message(
@@ -215,70 +247,36 @@ async fn message_handler(bot: Bot, msg: Message, state: AppState) -> ResponseRes
                     }
                 }
             }
-            UserState::RegisteringPassword { username } => {
-                if text.len() < 6 {
-                    bot.send_message(
-                        msg.chat.id,
-                        "❌ Пароль должен содержать минимум 6 символов. Попробуйте еще раз:"
-                    ).await?;
-                    return Ok(());
-                }
-                
-                session.state = UserState::RegisteringPasswordConfirm { 
-                    username: username.clone(), 
-                    password: text.to_string() 
-                };
-                
-                bot.send_message(
-                    msg.chat.id,
-                    "🔐 Подтвердите пароль (введите его еще раз):"
-                ).await?;
-            }
-            UserState::RegisteringPasswordConfirm { username, password } => {
-                if text != password {
-                    bot.send_message(
-                        msg.chat.id,
-                        "❌ Пароли не совпадают. Попробуйте еще раз:"
-                    ).await?;
-                    return Ok(());
-                }
-                
-                // Register user via auth-service
-                match register_user(username, text, &msg.from().unwrap().first_name).await {
-                    Ok(_) => {
-                        session.state = UserState::LoggedInAwaitingCode { username: username.clone() };
-                        
-                        // Generate confirmation code
-                        let code = generate_confirmation_code();
-                        
-                        bot.send_message(
-                            msg.chat.id,
-                            format!("🎉 Регистрация успешна!\n\n🔑 Ваш код подтверждения:\n\n`{}`\n\nВведите этот код в приложении RSCord.", code)
-                        ).await?;
-                    }
-                    Err(e) => {
-                        session.state = UserState::ChoosingAction;
-                        bot.send_message(
-                            msg.chat.id,
-                            format!("❌ Ошибка регистрации: {}\n\nИспользуйте /register для повторной попытки.", e)
-                        ).await?;
-                    }
-                }
+// Removed password-based states - now using Telegram-only authentication
             }
             UserState::LoggingInUsername => {
-                // Check if user exists
-                match check_user_exists(text).await {
+                // Check if user exists and login directly
+                let user = msg.from().unwrap();
+                
+                match verify_telegram_login(user.id.0 as i64, text).await {
                     Ok(true) => {
-                        session.state = UserState::LoggingInPassword { username: text.to_string() };
-                        bot.send_message(
-                            msg.chat.id,
-                            "🔐 Введите ваш пароль:"
-                        ).await?;
+                        // Request auth code for login
+                        match request_auth_code(user.id.0 as i64, text).await {
+                            Ok(code) => {
+                                session.state = UserState::LoggedInAwaitingCode { username: text.to_string() };
+                                
+                                bot.send_message(
+                                    msg.chat.id,
+                                    format!("✅ Вход выполнен успешно!\n\n🔑 Ваш код подтверждения:\n\n`{}`\n\nВведите этот код в приложении Radiate.", code)
+                                ).await?;
+                            }
+                            Err(e) => {
+                                bot.send_message(
+                                    msg.chat.id,
+                                    format!("❌ Ошибка генерации кода: {}\n\nПопробуйте еще раз.", e)
+                                ).await?;
+                            }
+                        }
                     }
                     Ok(false) => {
                         bot.send_message(
                             msg.chat.id,
-                            "❌ Пользователь не найден. Проверьте username или зарегистрируйтесь:\n\n/register - Регистрация"
+                            "❌ Пользователь не найден или неверные данные. Проверьте username или зарегистрируйтесь:\n\n/register - Регистрация"
                         ).await?;
                     }
                     Err(_) => {
@@ -289,34 +287,7 @@ async fn message_handler(bot: Bot, msg: Message, state: AppState) -> ResponseRes
                     }
                 }
             }
-            UserState::LoggingInPassword { username } => {
-                // Verify login credentials
-                match verify_login(username, text).await {
-                    Ok(true) => {
-                        session.state = UserState::LoggedInAwaitingCode { username: username.clone() };
-                        
-                        // Generate confirmation code
-                        let code = generate_confirmation_code();
-                        
-                        bot.send_message(
-                            msg.chat.id,
-                            format!("✅ Вход выполнен успешно!\n\n🔑 Ваш код подтверждения:\n\n`{}`\n\nВведите этот код в приложении RSCord.", code)
-                        ).await?;
-                    }
-                    Ok(false) => {
-                        bot.send_message(
-                            msg.chat.id,
-                            "❌ Неверный пароль. Попробуйте еще раз:"
-                        ).await?;
-                    }
-                    Err(_) => {
-                        bot.send_message(
-                            msg.chat.id,
-                            "❌ Ошибка входа. Попробуйте позже."
-                        ).await?;
-                    }
-                }
-            }
+            // Removed password-based login state - using direct Telegram authentication
             _ => {
                 bot.send_message(
                     msg.chat.id,
@@ -486,7 +457,7 @@ async fn main() -> anyhow::Result<()> {
 async fn check_username_availability(username: &str) -> Result<bool, Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
     let response = client
-        .post("http://127.0.0.1:14700/api/auth/check-username")
+        .post("http://127.0.0.1:14701/api/auth/check-username") // Updated port
         .header("Content-Type", "application/json")
         .json(&serde_json::json!({ "username": username }))
         .send()
@@ -503,23 +474,23 @@ async fn check_username_availability(username: &str) -> Result<bool, Box<dyn std
 async fn check_user_exists(username: &str) -> Result<bool, Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
     let response = client
-        .get(&format!("http://127.0.0.1:14700/api/users/@{}", username))
+        .get(&format!("http://127.0.0.1:14701/api/users/@{}", username)) // Updated port
         .send()
         .await?;
     
     Ok(response.status().is_success())
 }
 
-async fn register_user(username: &str, password: &str, display_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+async fn register_user(telegram_id: i64, username: &str, display_name: &str, telegram_username: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
     let response = client
-        .post("http://127.0.0.1:14700/api/auth/register")
+        .post("http://127.0.0.1:14701/api/auth/telegram/register") // Updated port
         .header("Content-Type", "application/json")
         .json(&serde_json::json!({
-            "email": format!("{}@telegram.local", username), // Fake email for Telegram users
+            "telegram_id": telegram_id,
+            "telegram_username": telegram_username,
             "username": username,
-            "display_name": display_name,
-            "password": password
+            "display_name": display_name
         }))
         .send()
         .await?;
@@ -532,14 +503,14 @@ async fn register_user(username: &str, password: &str, display_name: &str) -> Re
     }
 }
 
-async fn verify_login(username: &str, password: &str) -> Result<bool, Box<dyn std::error::Error>> {
+async fn verify_telegram_login(telegram_id: i64, username: &str) -> Result<bool, Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
     let response = client
-        .post("http://127.0.0.1:14700/api/auth/login")
+        .post("http://127.0.0.1:14701/api/auth/telegram/login") // Updated port
         .header("Content-Type", "application/json")
         .json(&serde_json::json!({
-            "email": format!("{}@telegram.local", username),
-            "password": password
+            "telegram_id": telegram_id,
+            "username": username
         }))
         .send()
         .await?;
@@ -547,8 +518,22 @@ async fn verify_login(username: &str, password: &str) -> Result<bool, Box<dyn st
     Ok(response.status().is_success())
 }
 
-fn generate_confirmation_code() -> String {
-    use rand::Rng;
-    let mut rng = rand::thread_rng();
-    format!("{:06}", rng.gen_range(100000..999999))
+async fn request_auth_code(telegram_id: i64, username: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let client = reqwest::Client::new();
+    let response = client
+        .post("http://127.0.0.1:14701/api/auth/telegram/request-code")
+        .header("Content-Type", "application/json")
+        .json(&serde_json::json!({
+            "telegram_id": telegram_id,
+            "username": username
+        }))
+        .send()
+        .await?;
+    
+    if response.status().is_success() {
+        let result: serde_json::Value = response.json().await?;
+        Ok(result["code"].as_str().unwrap_or("000000").to_string())
+    } else {
+        Err("Failed to request auth code".into())
+    }
 }

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__memory-keeper__context_save",
+      "mcp__memory-keeper__context_search",
+      "mcp__memory-keeper__context_get"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
