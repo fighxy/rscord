@@ -5,6 +5,7 @@ import { X, User, Shield, Bell, Lock, Palette, Mic, Settings } from 'lucide-reac
 import { UserSettings } from './UserSettings';
 import AppearanceSettings from './AppearanceSettings';
 import NotificationSettings from './NotificationSettings';
+import VoiceSettings from './VoiceSettings';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -73,30 +74,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         return <AppearanceSettings />;
       
       case 'voice':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold text-text-primary mb-2">
-                Голос и видео
-              </h2>
-              <p className="text-text-secondary mb-6">
-                Настройки микрофона, камеры и звуковых устройств
-              </p>
-            </div>
-            
-            <div className="card p-6">
-              <div className="text-center py-12">
-                <Mic className="w-16 h-16 mx-auto mb-4 text-interactive-muted" />
-                <h3 className="text-lg font-medium text-text-primary mb-2">
-                  Настройки голоса и видео
-                </h3>
-                <p className="text-text-secondary">
-                  Эта функция будет доступна в следующих обновлениях
-                </p>
-              </div>
-            </div>
-          </div>
-        );
+        return <VoiceSettings />;
       
       case 'advanced':
         return (

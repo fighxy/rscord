@@ -4,6 +4,7 @@
 @import './buttons.css';
 @import './inputs.css';
 @import './cards.css';
+@import '../components.css';
 
 /* Badge Components */
 .badge {
