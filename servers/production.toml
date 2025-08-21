@@ -1,4 +1,4 @@
-# Production configuration for RSCORD microservices
+# Production configuration for RADIATE microservices
 # Server: 5.35.83.143
 
 [server]
@@ -12,7 +12,7 @@ presence_port = 14706
 [database]
 # MongoDB Configuration
 mongodb_url = "mongodb://5.35.83.143:27017"
-mongodb_name = "rscord"
+mongodb_name = "radiate"
 max_pool_size = 10
 min_pool_size = 2
 
@@ -25,7 +25,7 @@ redis_ttl = 3600
 [messaging]
 # RabbitMQ Configuration
 rabbitmq_url = "amqp://guest:guest@5.35.83.143:5672"
-rabbitmq_exchange = "rscord_events"
+rabbitmq_exchange = "radiate_events"
 rabbitmq_prefetch = 10
 
 [auth]
@@ -55,7 +55,7 @@ stun_servers = [
     "stun:stun1.l.google.com:19302"
 ]
 turn_servers = [
-    { url = "turn:5.35.83.143:3478", username = "rscord", password = "CHANGE_THIS_PASSWORD" }
+    { url = "turn:5.35.83.143:3478", username = "radiate", password = "CHANGE_THIS_PASSWORD" }
 ]
 ice_gathering_timeout = 5000
 max_participants_per_room = 50
@@ -65,7 +65,7 @@ max_participants_per_room = 50
 level = "info"
 format = "json"
 output = "stdout"
-log_file = "/var/log/rscord/services.log"
+log_file = "/var/log/radiate/services.log"
 
 [performance]
 # Performance tuning
@@ -79,8 +79,8 @@ compression = true
 rate_limit_per_minute = 60
 max_request_size = "10MB"
 enable_tls = false  # Set to true when you have SSL certificates
-tls_cert = "/etc/rscord/cert.pem"
-tls_key = "/etc/rscord/key.pem"
+tls_cert = "/etc/radiate/cert.pem"
+tls_key = "/etc/radiate/key.pem"
 
 [monitoring]
 # Monitoring and health checks

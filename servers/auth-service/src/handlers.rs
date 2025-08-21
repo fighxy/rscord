@@ -14,6 +14,17 @@ use ulid::Ulid;
 use crate::{AuthState, UserDoc, username_validator::{validate_username, suggest_username}};
 
 #[derive(Deserialize)]
+pub struct TelegramAuthRequest {
+    pub auth_code: String,
+}
+
+#[derive(Serialize)]
+pub struct TelegramAuthResponse {
+    pub token: String,
+    pub user: User,
+}
+
+#[derive(Deserialize)]
 pub struct RegisterRequest {
     pub email: String,
     pub username: Option<String>,
@@ -128,7 +139,9 @@ pub async fn register(
 
     let user = User {
         id: Id(Ulid::new()),
-        email: body.email.clone(),
+        telegram_id: None,
+        telegram_username: None,
+        email: Some(body.email.clone()),
         username: username.clone(),
         display_name: body.display_name.clone(),
         created_at: Utc::now(),
@@ -144,10 +157,12 @@ pub async fn register(
     // Save to MongoDB
     let doc = UserDoc {
         id: user.id.0.to_string(),
+        telegram_id: user.telegram_id,
+        telegram_username: user.telegram_username.clone(),
         email: user.email.clone(),
         username: user.username.clone(),
         display_name: user.display_name.clone(),
-        password_hash,
+        password_hash: Some(password_hash),
         created_at: user.created_at,
     };
 
@@ -172,8 +187,9 @@ pub async fn login(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::UNAUTHORIZED)?;
 
-    // Verify password
-    let parsed_hash = PasswordHash::new(&user_doc.password_hash)
+    // Verify password - check if user has password (email users)
+    let password_hash = user_doc.password_hash.ok_or(StatusCode::UNAUTHORIZED)?;
+    let parsed_hash = PasswordHash::new(&password_hash)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     
     argon2::Argon2::default()
@@ -199,6 +215,8 @@ pub async fn login(
 
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?),
+        telegram_id: user_doc.telegram_id,
+        telegram_username: user_doc.telegram_username,
         email: user_doc.email,
         username: user_doc.username,
         display_name: user_doc.display_name,
@@ -237,6 +255,8 @@ pub async fn get_current_user(
 
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
+        telegram_id: user_doc.telegram_id,
+        telegram_username: user_doc.telegram_username,
         email: user_doc.email,
         username: user_doc.username,
         display_name: user_doc.display_name,
@@ -275,6 +295,8 @@ pub async fn verify_token(
 
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
+        telegram_id: user_doc.telegram_id,
+        telegram_username: user_doc.telegram_username,
         email: user_doc.email,
         username: user_doc.username,
         display_name: user_doc.display_name,
@@ -401,6 +423,8 @@ pub async fn find_user_by_username(
 
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
+        telegram_id: user_doc.telegram_id,
+        telegram_username: user_doc.telegram_username,
         email: user_doc.email,
         username: user_doc.username,
         display_name: user_doc.display_name,
@@ -409,3 +433,138 @@ pub async fn find_user_by_username(
 
     Ok(Json(user))
 }
+
+pub async fn telegram_auth(
+    State(state): State<AuthState>,
+    Json(body): Json<TelegramAuthRequest>,
+) -> Result<Json<TelegramAuthResponse>, StatusCode> {
+    // Call telegram-bot-service to get user data
+    let telegram_service_url = "http://127.0.0.1:14703/api/telegram/auth/check";
+    let client = reqwest::Client::new();
+    
+    #[derive(serde::Deserialize)]
+    struct TelegramAuthData {
+        confirmed: bool,
+        user_data: Option<TelegramUserData>,
+    }
+    
+    #[derive(serde::Deserialize)]
+    struct TelegramUserData {
+        telegram_id: i64,
+        telegram_username: Option<String>,
+        first_name: String,
+        last_name: Option<String>,
+    }
+    
+    let response = client
+        .get(telegram_service_url)
+        .query(&[("auth_code", &body.auth_code)])
+        .send()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    if !response.status().is_success() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+    
+    let auth_data: TelegramAuthData = response
+        .json()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    if !auth_data.confirmed {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+    
+    let user_data = auth_data.user_data.ok_or(StatusCode::UNAUTHORIZED)?;
+    
+    // Check if user exists by telegram_id
+    let users: Collection<UserDoc> = state.mongo.database("rscord").collection("users");
+    let filter = doc! {"telegram_id": &user_data.telegram_id};
+    
+    let user = if let Ok(Some(user_doc)) = users.find_one(filter).await {
+        // User exists, return existing user
+        User {
+            id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?),
+            telegram_id: user_doc.telegram_id,
+            telegram_username: user_doc.telegram_username,
+            email: user_doc.email,
+            username: user_doc.username,
+            display_name: user_doc.display_name,
+            created_at: user_doc.created_at,
+        }
+    } else {
+        // New user, create account
+        let suggested_username = user_data.telegram_username
+            .clone()
+            .unwrap_or_else(|| suggest_username(&user_data.first_name));
+        
+        // Ensure username is unique
+        let mut final_username = validate_username(&suggested_username)
+            .unwrap_or_else(|_| suggest_username(&user_data.first_name));
+        
+        let mut counter = 1;
+        loop {
+            let username_filter = doc! {"username": &final_username};
+            if users.find_one(username_filter).await.unwrap_or(None).is_none() {
+                break;
+            }
+            final_username = format!("{}_{}", suggested_username, counter);
+            counter += 1;
+        }
+        
+        let display_name = if let Some(ref last_name) = user_data.last_name {
+            format!("{} {}", user_data.first_name, last_name)
+        } else {
+            user_data.first_name.clone()
+        };
+        
+        let user = User {
+            id: Id(Ulid::new()),
+            telegram_id: Some(user_data.telegram_id),
+            telegram_username: user_data.telegram_username.clone(),
+            email: None,
+            username: final_username.clone(),
+            display_name: display_name.clone(),
+            created_at: Utc::now(),
+        };
+        
+        let doc = UserDoc {
+            id: user.id.0.to_string(),
+            telegram_id: user.telegram_id,
+            telegram_username: user.telegram_username.clone(),
+            email: user.email.clone(),
+            username: user.username.clone(),
+            display_name: user.display_name.clone(),
+            password_hash: None, // No password for Telegram users
+            created_at: user.created_at,
+        };
+        
+        users
+            .insert_one(doc)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        
+        user
+    };
+    
+    // Create JWT token
+    let now = chrono::Utc::now();
+    let exp = now + chrono::Duration::hours(24);
+    
+    let claims = Claims {
+        sub: user.id.0.to_string(),
+        exp: exp.timestamp(),
+        iat: now.timestamp(),
+    };
+    
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(state.jwt_secret.as_ref()),
+    )
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    
+    Ok(Json(TelegramAuthResponse { token, user }))
+}
+

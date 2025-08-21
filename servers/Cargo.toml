@@ -6,6 +6,7 @@ members = [
   "voice-service",
   "presence-service",
   "signaling",
+  "telegram-bot-service",
   "crates/common",
   "crates/api",
   "crates/events",

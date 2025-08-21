@@ -1,8 +1,8 @@
 [package]
-name = "rscord-common"
+name = "radiate-common"
 version = "2.0.0"
 edition = "2021"
-description = "Production-ready common utilities for RSCORD with enhanced security"
+description = "Production-ready common utilities for Radiate with enhanced security"
 
 [dependencies]
 # Core dependencies

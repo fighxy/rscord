@@ -1,5 +1,5 @@
 [package]
-name = "rscord-gateway"
+name = "radiate-gateway"
 version = "0.1.0"
 edition = "2021"
 
@@ -16,7 +16,7 @@ hyper = { version = "1", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
 http-body-util = "0.1"
 anyhow = "1"
-rscord-common = { path = "../crates/common" }
+radiate-common = { path = "../crates/common" }
 headers = "0.4"
 futures-util = "0.3"
 bytes = "1"

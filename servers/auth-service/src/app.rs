@@ -29,6 +29,7 @@ pub async fn create_auth_app(state: AuthState) -> Router {
         .route("/api/auth/logout", post(handlers::logout))
         .route("/api/auth/check-username", post(handlers::check_username))
         .route("/api/auth/suggest-username", post(handlers::suggest_username_endpoint))
+        .route("/api/auth/telegram", post(handlers::telegram_auth))
         .route("/api/users/@:username", get(handlers::find_user_by_username))
         .with_state(state)
         .layer(cors)
@@ -61,12 +62,26 @@ async fn create_indexes(state: &AuthState) -> Result<(), mongodb::error::Error> 
         )
         .await
     {
+        Ok(_) => info!("Created unique index on users.username"),
+        Err(e) => warn!("Failed to create index on users.username: {}", e),
+    }
+    
+    // Create unique index on telegram_id (sparse to allow null values)
+    match users
+        .create_index(
+            IndexModel::builder()
+                .keys(doc! {"telegram_id": 1})
+                .options(IndexOptions::builder().unique(true).sparse(true).build())
+                .build(),
+        )
+        .await
+    {
         Ok(_) => {
-            info!("Created unique index on users.username");
+            info!("Created unique sparse index on users.telegram_id");
             Ok(())
         }
         Err(e) => {
-            warn!("Failed to create index on users.username: {}", e);
+            warn!("Failed to create index on users.telegram_id: {}", e);
             Err(e)
         }
     }

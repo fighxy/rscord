@@ -26,7 +26,7 @@ COPY signaling/Cargo.toml ./signaling/
 
 # Build dependencies
 RUN cargo build --release
-RUN rm -rf */src target/release/deps/rscord*
+RUN rm -rf */src target/release/deps/radiate*
 
 # Copy actual source code
 COPY gateway/src ./gateway/src
@@ -59,7 +59,7 @@ ARG SERVICE_NAME
 COPY --from=builder /app/target/release/$SERVICE_NAME ./service
 
 # Copy configuration
-COPY rscord.toml ./
+COPY radiate.toml ./
 
 # Switch to app user
 USER appuser

@@ -1,5 +1,5 @@
 [package]
-name = "rscord-file-service"
+name = "radiate-file-service"
 version = "0.1.0"
 edition = "2021"
 
@@ -34,4 +34,4 @@ mongodb = { version = "2", features = ["tokio-runtime"] }
 chrono = { version = "0.4", features = ["serde"] }
 
 # Common crate
-rscord-common = { path = "../crates/common" }
+radiate-common = { path = "../crates/common" }

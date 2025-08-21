@@ -1,5 +1,5 @@
 [package]
-name = "rscord-presence-service"
+name = "radiate-presence-service"
 version = "0.1.0"
 edition = "2021"
 
@@ -16,7 +16,7 @@ dashmap = "5"
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
 futures-util = "0.3"
-rscord-common = { path = "../crates/common" }
-rscord-events = { path = "../crates/events" }
+radiate-common = { path = "../crates/common" }
+radiate-events = { path = "../crates/events" }
 lapin = { version = "2", default-features = false, features = ["native-tls"] }
 redis = { version = "0.25", features = ["tokio-comp", "connection-manager"] }
