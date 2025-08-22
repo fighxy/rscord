@@ -1,5 +1,4 @@
 use mongodb::Client as MongoClient;
-use radiate_common::{load_config, AppConfig};
 use radiate_auth_service::{create_app, AuthState};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -11,20 +10,21 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let cfg: AppConfig = load_config("RADIATE").expect("load config");
     let bind_address = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
     let auth_port = std::env::var("AUTH_PORT").unwrap_or_else(|_| "14701".to_string());
     let addr: SocketAddr = format!("{}:{}", bind_address, auth_port).parse().expect("bind addr");
 
-    // Connect to MongoDB
-    let mongo_uri = cfg.mongodb_uri.clone().expect("MongoDB URI not configured");
-    let mongo = MongoClient::with_uri_str(mongo_uri)
+    // Connect to MongoDB using environment variable
+    let mongo_uri = std::env::var("MONGO_URI").unwrap_or_else(|_| "mongodb://localhost:27017/radiate".to_string());
+    let mongo = MongoClient::with_uri_str(&mongo_uri)
         .await
         .expect("Failed to connect to MongoDB");
 
+    let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "default-jwt-secret-change-in-production".to_string());
+
     let state = AuthState {
         mongo: mongo.clone(),
-        jwt_secret: cfg.jwt_secret.clone().expect("JWT secret not configured"),
+        jwt_secret,
         auth_codes: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
     };
 

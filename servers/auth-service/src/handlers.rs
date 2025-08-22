@@ -173,9 +173,9 @@ pub async fn get_current_user(
 
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
-        telegram_id: user_doc.telegram_id,
+        telegram_id: Some(user_doc.telegram_id),
         telegram_username: user_doc.telegram_username,
-        email: user_doc.email,
+        email: None,
         username: user_doc.username,
         display_name: user_doc.display_name,
         created_at: user_doc.created_at,
@@ -213,9 +213,9 @@ pub async fn verify_token(
 
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
-        telegram_id: user_doc.telegram_id,
+        telegram_id: Some(user_doc.telegram_id),
         telegram_username: user_doc.telegram_username,
-        email: user_doc.email,
+        email: None,
         username: user_doc.username,
         display_name: user_doc.display_name,
         created_at: user_doc.created_at,
@@ -341,9 +341,9 @@ pub async fn find_user_by_username(
 
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
-        telegram_id: user_doc.telegram_id,
+        telegram_id: Some(user_doc.telegram_id),
         telegram_username: user_doc.telegram_username,
-        email: user_doc.email,
+        email: None,
         username: user_doc.username,
         display_name: user_doc.display_name,
         created_at: user_doc.created_at,
@@ -367,9 +367,9 @@ pub async fn find_user_by_telegram_id(
 
     let user = User {
         id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
-        telegram_id: user_doc.telegram_id,
+        telegram_id: Some(user_doc.telegram_id),
         telegram_username: user_doc.telegram_username,
-        email: user_doc.email,
+        email: None,
         username: user_doc.username,
         display_name: user_doc.display_name,
         created_at: user_doc.created_at,

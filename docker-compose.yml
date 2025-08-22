@@ -104,6 +104,41 @@ services:
       - "14025:1025"
     restart: unless-stopped
 
+  # Auth Service - Radiate authentication service
+  auth-service:
+    build:
+      context: ./servers/auth-service
+      dockerfile: Dockerfile
+    container_name: radiate-auth-service
+    ports:
+      - "14701:14701"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/radiate
+      - JWT_SECRET=radiate-jwt-secret-production-change-this
+      - BIND_ADDRESS=0.0.0.0
+      - AUTH_PORT=14701
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - default
+
+  # Telegram Bot Service - Radiate telegram bot
+  telegram-bot:
+    build:
+      context: ./servers/telegram-bot-service
+      dockerfile: Dockerfile
+    container_name: radiate-telegram-bot
+    environment:
+      - BOT_TOKEN=8485874967:AAHyf9abWYBwbTrlHFcY9RaP25IvRg8jbk8
+      - AUTH_SERVICE_URL=http://auth-service:14701
+    depends_on:
+      - auth-service
+    restart: unless-stopped
+    networks:
+      - default
+
 volumes:
   mongo_data:
     driver: local

@@ -43,7 +43,7 @@ enum Command {
 async fn check_username_availability(username: &str) -> Result<bool, reqwest::Error> {
     let client = reqwest::Client::new();
     let response = client
-        .post("http://127.0.0.1:14701/api/auth/check-username")
+        .post("http://auth-service:14701/api/auth/check-username")
         .json(&serde_json::json!({"username": username}))
         .send()
         .await?;
@@ -55,7 +55,7 @@ async fn check_username_availability(username: &str) -> Result<bool, reqwest::Er
 async fn register_user_via_auth(telegram_id: i64, telegram_username: Option<String>, username: &str) -> Result<bool, reqwest::Error> {
     let client = reqwest::Client::new();
     let response = client
-        .post("http://127.0.0.1:14701/api/auth/telegram/register")
+        .post("http://auth-service:14701/api/auth/telegram/register")
         .json(&serde_json::json!({
             "telegram_id": telegram_id,
             "telegram_username": telegram_username,
@@ -71,7 +71,7 @@ async fn register_user_via_auth(telegram_id: i64, telegram_username: Option<Stri
 async fn verify_user_via_auth(telegram_id: i64, username: &str) -> Result<bool, reqwest::Error> {
     let client = reqwest::Client::new();
     let response = client
-        .post("http://127.0.0.1:14701/api/auth/telegram/login")
+        .post("http://auth-service:14701/api/auth/telegram/login")
         .json(&serde_json::json!({
             "telegram_id": telegram_id,
             "username": username
@@ -85,7 +85,7 @@ async fn verify_user_via_auth(telegram_id: i64, username: &str) -> Result<bool, 
 async fn find_user_by_telegram_id(telegram_id: i64) -> Result<Option<String>, reqwest::Error> {
     let client = reqwest::Client::new();
     let response = client
-        .get(&format!("http://127.0.0.1:14701/api/users/telegram/{}", telegram_id))
+        .get(&format!("http://auth-service:14701/api/users/telegram/{}", telegram_id))
         .send()
         .await?;
     
@@ -100,7 +100,7 @@ async fn find_user_by_telegram_id(telegram_id: i64) -> Result<Option<String>, re
 async fn request_auth_code_from_service(telegram_id: i64, username: &str) -> Result<(String, i64), reqwest::Error> {
     let client = reqwest::Client::new();
     let response = client
-        .post("http://127.0.0.1:14701/api/auth/telegram/request-code")
+        .post("http://auth-service:14701/api/auth/telegram/request-code")
         .json(&serde_json::json!({
             "telegram_id": telegram_id,
             "username": username
