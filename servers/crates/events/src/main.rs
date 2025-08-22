@@ -1,6 +1,6 @@
 use axum::{extract::{ws::{Message, WebSocket, WebSocketUpgrade}, Query}, response::IntoResponse, routing::get, Router};
 use lapin::{options::*, types::FieldTable, Connection, ConnectionProperties};
-use rscord_common::{load_config, AppConfig};
+use radiate_common::{load_config, AppConfig};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 use tracing::info;
@@ -13,7 +13,7 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let cfg: AppConfig = load_config("RSCORD").expect("load config");
+    let cfg: AppConfig = load_config("RADIATE").expect("load config");
     let addr: SocketAddr = cfg
         .bind_addr
         .as_deref()
@@ -23,7 +23,7 @@ async fn main() {
 
     let app = Router::new().route("/health", get(|| async { "ok" })).route("/ws", get(ws_handler));
 
-    info!("rscord-events listening on {}", addr);
+    info!("radiate-events listening on {}", addr);
     let listener = TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
@@ -39,14 +39,14 @@ async fn ws_handler(Query(q): Query<WsQuery>, ws: WebSocketUpgrade) -> impl Into
 
 async fn handle_ws(mut socket: WebSocket) {
     // Connect to RabbitMQ and bind a temporary queue for this connection
-    let cfg = load_config("RSCORD").expect("cfg");
+    let cfg = load_config("RADIATE").expect("cfg");
     let conn = Connection::connect(&cfg.rabbitmq_uri.expect("RabbitMQ URI not configured"), ConnectionProperties::default())
         .await
         .expect("amqp");
     let channel = conn.create_channel().await.expect("ch");
     channel
         .exchange_declare(
-            "rscord.events",
+            "radiate.events",
             lapin::ExchangeKind::Topic,
             ExchangeDeclareOptions { durable: true, ..Default::default() },
             FieldTable::default(),
@@ -65,7 +65,7 @@ async fn handle_ws(mut socket: WebSocket) {
     let _ = channel
         .queue_bind(
             &q.name().as_str(),
-            "rscord.events",
+            "radiate.events",
             "#.created",
             QueueBindOptions::default(),
             FieldTable::default(),
@@ -74,7 +74,7 @@ async fn handle_ws(mut socket: WebSocket) {
     let _ = channel
         .queue_bind(
             &q.name().as_str(),
-            "rscord.events",
+            "radiate.events",
             "#.updated",
             QueueBindOptions::default(),
             FieldTable::default(),
@@ -83,7 +83,7 @@ async fn handle_ws(mut socket: WebSocket) {
     let _ = channel
         .queue_bind(
             &q.name().as_str(),
-            "rscord.events",
+            "radiate.events",
             "#.deleted",
             QueueBindOptions::default(),
             FieldTable::default(),

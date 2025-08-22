@@ -207,7 +207,7 @@ async fn handle_room_finished(
 ) -> Result<(), StatusCode> {
     info!("Room finished: {} ({})", room.name, room.sid);
     
-    // Extract room ID from LiveKit room name (format: rscord_{guild_id}_{room_id})
+    // Extract room ID from LiveKit room name (format: radiate_{guild_id}_{room_id})
     if let Some(room_id) = extract_room_id_from_livekit_name(&room.name) {
         // Mark room as inactive
         if let Err(e) = mark_room_inactive(&state, &room_id).await {
@@ -353,9 +353,9 @@ async fn handle_recording_finished(
 // Helper functions
 
 fn extract_room_id_from_livekit_name(livekit_room_name: &str) -> Option<String> {
-    // Expected format: rscord_{guild_id}_{room_id}
+    // Expected format: radiate_{guild_id}_{room_id}
     let parts: Vec<&str> = livekit_room_name.split('_').collect();
-    if parts.len() >= 3 && parts[0] == "rscord" {
+    if parts.len() >= 3 && parts[0] == "radiate" {
         Some(parts[2].to_string())
     } else {
         None

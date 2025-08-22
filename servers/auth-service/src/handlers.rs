@@ -10,9 +10,6 @@ use mongodb::{bson::doc, Collection};
 use radiate_common::{verify_jwt, Id, User};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
-use std::collections::HashMap;
-use tokio::sync::RwLock;
-use std::sync::Arc;
 
 use crate::{AuthState, UserDoc, username_validator::{validate_username, suggest_username}};
 
@@ -623,25 +620,28 @@ pub async fn telegram_request_code(
         .ok_or(StatusCode::NOT_FOUND)?;
     
     // Check if there's already an active code for this user
-    let codes = state.auth_codes.read().await;
     let now = chrono::Utc::now();
+    let existing_code_info = {
+        let codes = state.auth_codes.read().await;
+        // Find existing active code for this telegram_id and username
+        codes.iter().find_map(|(existing_code, auth_code)| {
+            if auth_code.telegram_id == body.telegram_id 
+                && auth_code.username == body.username 
+                && now < auth_code.expires_at {
+                let remaining_seconds = (auth_code.expires_at - now).num_seconds();
+                Some((existing_code.clone(), remaining_seconds))
+            } else {
+                None
+            }
+        })
+    };
     
-    // Find existing active code for this telegram_id and username
-    for (existing_code, auth_code) in codes.iter() {
-        if auth_code.telegram_id == body.telegram_id 
-            && auth_code.username == body.username 
-            && now < auth_code.expires_at {
-            // There's still an active code
-            let remaining_seconds = (auth_code.expires_at - now).num_seconds();
-            drop(codes); // Release read lock
-            
-            return Ok(Json(TelegramRequestCodeResponse {
-                code: existing_code.clone(),
-                expires_in: remaining_seconds,
-            }));
-        }
+    if let Some((code, expires_in)) = existing_code_info {
+        return Ok(Json(TelegramRequestCodeResponse {
+            code,
+            expires_in,
+        }));
     }
-    drop(codes); // Release read lock
     
     // Clean up expired codes first
     let mut codes_write = state.auth_codes.write().await;

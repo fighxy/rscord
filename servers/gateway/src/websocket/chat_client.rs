@@ -1,7 +1,6 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
-use crate::AppState;
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateMessageRequest {

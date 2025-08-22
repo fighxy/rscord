@@ -1,6 +1,6 @@
 use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
 use serde::{Deserialize, Serialize};
-use tracing::{error, warn};
+use tracing::error;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {

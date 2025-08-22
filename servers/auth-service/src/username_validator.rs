@@ -7,7 +7,7 @@ static USERNAME_REGEX: Lazy<Regex> = Lazy::new(|| {
 
 static RESERVED_USERNAMES: &[&str] = &[
     "admin", "administrator", "mod", "moderator", "root", "system", 
-    "support", "help", "api", "bot", "rscord", "discord", "slack",
+    "support", "help", "api", "bot", "radiate", "discord", "slack",
     "everyone", "here", "channel", "guild", "server", "user",
     "null", "undefined", "void", "test", "demo", "guest",
     "www", "mail", "ftp", "ssh", "http", "https", "smtp", "imap"

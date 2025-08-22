@@ -39,7 +39,6 @@ enum Command {
     Help,
 }
 
-
 async fn check_username_availability(username: &str) -> Result<bool, reqwest::Error> {
     let client = reqwest::Client::new();
     let response = client
@@ -61,20 +60,6 @@ async fn register_user_via_auth(telegram_id: i64, telegram_username: Option<Stri
             "telegram_username": telegram_username,
             "username": username,
             "display_name": username
-        }))
-        .send()
-        .await?;
-    
-    Ok(response.status().is_success())
-}
-
-async fn verify_user_via_auth(telegram_id: i64, username: &str) -> Result<bool, reqwest::Error> {
-    let client = reqwest::Client::new();
-    let response = client
-        .post("http://auth-service:14701/api/auth/telegram/login")
-        .json(&serde_json::json!({
-            "telegram_id": telegram_id,
-            "username": username
         }))
         .send()
         .await?;
@@ -159,10 +144,8 @@ async fn handle_command(
 ) -> ResponseResult<()> {
     match cmd {
         Command::Start => {
-            // Логируем telegram_id для отладки
             info!("User with telegram_id {} started the bot", user_id);
             
-            // Проверяем, существует ли пользователь в базе данных
             let mut sessions = state.user_sessions.write().await;
             let session = sessions.entry(user_id).or_insert(UserSession {
                 telegram_id: user_id,
@@ -170,33 +153,40 @@ async fn handle_command(
                 state: SessionState::Start,
             });
             
-            // Проверяем, есть ли пользователь в базе
             match find_user_by_telegram_id(user_id).await {
                 Ok(Some(existing_username)) => {
-                session.state = SessionState::Registered(existing_username.clone());
-                bot.send_message(
-                    chat_id,
-                    format!(
-                        "🌟 **Добро пожаловать в Radiate, @{}!**\n\n\
-                        Вы уже зарегистрированы в системе.\n\n\
-                        📱 **Доступные действия:**\n\
-                        /getcode - Получить код для входа в приложение\n\
-                        /help - Справка по командам",
-                        existing_username
-                    )
-                ).await?;
-            } else {
-                bot.send_message(
-                    chat_id,
-                    "🌟 **Добро пожаловать в Radiate!**\n\n\
-                    Radiate - это современное приложение для голосового общения и совместной работы. \
-                    Создавайте команды, общайтесь голосом и работайте вместе!\n\n\
-                    📱 **Для начала работы:**\n\
-                    /register - Регистрация нового аккаунта\n\
-                    /login - Вход в существующий аккаунт\n\
-                    /getcode - Получить код для входа в приложение\n\n\
-                    ❓ /help - Справка по командам"
-                ).await?;
+                    session.state = SessionState::Registered(existing_username.clone());
+                    bot.send_message(
+                        chat_id,
+                        format!(
+                            "🌟 **Добро пожаловать в Radiate, @{}!**\n\n\
+                            Вы уже зарегистрированы в системе.\n\n\
+                            📱 **Доступные действия:**\n\
+                            /getcode - Получить код для входа в приложение\n\
+                            /help - Справка по командам",
+                            existing_username
+                        )
+                    ).await?;
+                },
+                Ok(None) => {
+                    bot.send_message(
+                        chat_id,
+                        "🌟 **Добро пожаловать в Radiate!**\n\n\
+                        Radiate - это современное приложение для голосового общения и совместной работы. \
+                        Создавайте команды, общайтесь голосом и работайте вместе!\n\n\
+                        📱 **Для начала работы:**\n\
+                        /register - Регистрация нового аккаунта\n\
+                        /login - Вход в существующий аккаунт\n\
+                        /getcode - Получить код для входа в приложение\n\n\
+                        ❓ /help - Справка по командам"
+                    ).await?;
+                },
+                Err(_) => {
+                    bot.send_message(
+                        chat_id,
+                        "⚠️ Ошибка подключения к серверу. Попробуйте /start позже."
+                    ).await?;
+                }
             }
         }
         
@@ -220,81 +210,24 @@ async fn handle_command(
             ).await?;
         }
         
-        Command::Login => {
-            let sessions = state.user_sessions.read().await;
-            if let Some(session) = sessions.get(&user_id) {
-                if let SessionState::Registered(ref stored_username) = session.state {
-                    match verify_user_via_auth(user_id, stored_username).await {
-                        Ok(true) => {
-                            bot.send_message(
-                                chat_id,
-                                format!("✅ **Вход выполнен успешно!**\n\nВаш username: @{}\n\n🔑 Используйте /getcode для получения кода входа в приложение.", stored_username)
-                            ).await?;
-                        }
-                        Ok(false) => {
-                            bot.send_message(
-                                chat_id,
-                                "❌ Пользователь не найден или данные не совпадают.\n\nИспользуйте /register для регистрации."
-                            ).await?;
-                        }
-                        Err(_) => {
-                            bot.send_message(
-                                chat_id,
-                                "⚠️ Ошибка подключения к серверу. Попробуйте позже."
-                            ).await?;
-                        }
-                    }
-                } else {
-                    bot.send_message(
-                        chat_id,
-                        "❌ Вы не зарегистрированы.\n\nИспользуйте /register для создания аккаунта."
-                    ).await?;
-                }
-            } else {
-                bot.send_message(
-                    chat_id,
-                    "❌ Сессия не найдена.\n\nИспользуйте /register для регистрации."
-                ).await?;
-            }
-        }
-        
         Command::GetCode => {
             let sessions = state.user_sessions.read().await;
             if let Some(session) = sessions.get(&user_id) {
                 if let SessionState::Registered(ref stored_username) = session.state {
-                    // Запрашиваем код у auth-service
                     match request_auth_code_from_service(user_id, stored_username).await {
                         Ok((code, expires_in)) => {
                             let minutes = expires_in / 60;
-                            let seconds = expires_in % 60;
                             
-                            let time_text = if expires_in >= 600 {
-                                "10 минут".to_string()
-                            } else if minutes > 0 {
-                                format!("{} мин {} сек", minutes, seconds)
-                            } else {
-                                format!("{} сек", seconds)
-                            };
-                            
-                            let message = if expires_in < 600 {
+                            bot.send_message(
+                                chat_id,
                                 format!(
                                     "🔑 **Ваш код для входа в приложение:**\n\n\
                                     `{}`\n\n\
                                     📱 Введите этот код в приложении Radiate для входа в аккаунт @{}\n\n\
-                                    ⏰ Код действителен еще {} (существующий код).",
-                                    code, stored_username, time_text
+                                    ⏰ Код действителен {} минут.",
+                                    code, stored_username, minutes
                                 )
-                            } else {
-                                format!(
-                                    "🔑 **Ваш код для входа в приложение:**\n\n\
-                                    `{}`\n\n\
-                                    📱 Введите этот код в приложении Radiate для входа в аккаунт @{}\n\n\
-                                    ⏰ Код действителен {}.",
-                                    code, stored_username, time_text
-                                )
-                            };
-                            
-                            bot.send_message(chat_id, message).await?;
+                            ).await?;
                         }
                         Err(_) => {
                             bot.send_message(
@@ -324,7 +257,6 @@ async fn handle_command(
                 **Команды:**\n\
                 /start - Добро пожаловать и информация\n\
                 /register - Регистрация нового пользователя\n\
-                /login - Вход в существующий аккаунт\n\
                 /getcode - Получить код для входа в приложение\n\
                 /help - Показать эту справку\n\n\
                 📱 **Как использовать:**\n\
@@ -332,6 +264,28 @@ async fn handle_command(
                 2. Затем /getcode для получения кода\n\
                 3. Введите код в приложении Radiate"
             ).await?;
+        }
+        
+        Command::Login => {
+            let sessions = state.user_sessions.read().await;
+            if let Some(session) = sessions.get(&user_id) {
+                if let SessionState::Registered(ref stored_username) = session.state {
+                    bot.send_message(
+                        chat_id,
+                        format!("✅ **Вы уже авторизованы!**\n\nВаш username: @{}\n\n🔑 Используйте /getcode для получения кода входа в приложение.", stored_username)
+                    ).await?;
+                } else {
+                    bot.send_message(
+                        chat_id,
+                        "❌ Вы не зарегистрированы.\n\nИспользуйте /register для регистрации."
+                    ).await?;
+                }
+            } else {
+                bot.send_message(
+                    chat_id,
+                    "❌ Сессия не найдена.\n\nИспользуйте /start для начала."
+                ).await?;
+            }
         }
     }
     Ok(())
@@ -382,14 +336,13 @@ async fn handle_text_message(
                                 ).await?;
                             }
                             Ok(false) => {
-                                // Проверяем, не связана ли ошибка с уже существующим аккаунтом
                                 bot.send_message(
                                     chat_id,
                                     "❌ **Регистрация невозможна**\n\n\
                                     Возможные причины:\n\
                                     • Username уже занят\n\
                                     • На этот Telegram аккаунт уже зарегистрирован пользователь\n\n\
-                                    Попробуйте другой username или используйте /login для входа в существующий аккаунт."
+                                    Попробуйте другой username."
                                 ).await?;
                             }
                             Err(_) => {

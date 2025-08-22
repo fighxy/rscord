@@ -44,7 +44,7 @@ pub async fn get_voice_token_mock(
     }
 
     let secret = &state.jwt_secret;
-    let claims = rscord_common::verify_jwt(token, secret)
+    let claims = radiate_common::verify_jwt(token, secret)
         .map_err(|_| axum::http::StatusCode::UNAUTHORIZED)?;
 
     let user_id = query.user_id.unwrap_or(claims.sub);

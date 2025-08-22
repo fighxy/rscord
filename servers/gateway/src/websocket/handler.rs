@@ -5,7 +5,6 @@ use std::sync::Arc;
 use tokio::sync::broadcast;
 use tracing::{error, info, warn};
 use dashmap::DashMap;
-use std::collections::HashMap;
 
 use crate::AppState;
 use super::chat_client::{ChatServiceClient, CreateMessageRequest};
@@ -194,7 +193,7 @@ impl WebSocketHandler {
                             error!("Error handling message: {}", e);
                         }
                     }
-                    Ok(Message::Ping(payload)) => {
+                    Ok(Message::Ping(_payload)) => {
                         // Отвечаем на ping
                         if let Some(conn) = manager_clone.connections.get(&user_id_clone) {
                             let pong_msg = serde_json::to_string(&WsMessage::Pong).unwrap();
@@ -259,7 +258,7 @@ impl WebSocketHandler {
                 Self::handle_typing_indicator(user_id, &channel_id, false, manager).await;
             }
             
-            WsMessage::PresenceUpdate { status, activity } => {
+            WsMessage::PresenceUpdate { status: _, activity: _ } => {
                 // Нужно передать presence_client через параметры
                 warn!("Presence update received but handler not fully implemented yet");
             }
@@ -334,7 +333,7 @@ impl WebSocketHandler {
         channel_id: &str,
         content: &str,
         manager: &SharedState,
-        app_state: &AppState,
+        _app_state: &AppState,
         chat_client: &ChatServiceClient,
         token: &str,
     ) {

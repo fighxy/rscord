@@ -8,7 +8,7 @@ use axum::{
     Router,
 };
 use mongodb::Client as MongoClient;
-use rscord_common::{load_config, AppConfig};
+use radiate_common::{load_config, AppConfig};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tower_http::cors::{Any, CorsLayer};
@@ -28,7 +28,7 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let cfg: AppConfig = load_config("RSCORD").expect("load config");
+    let cfg: AppConfig = load_config("RADIATE").expect("load config");
     let addr: SocketAddr = "127.0.0.1:14703".parse().expect("bind addr");
 
     let cors = CorsLayer::new()
@@ -46,7 +46,7 @@ async fn main() {
     let event_publisher = Arc::new(events::EventPublisher::new().await.expect("Failed to create event publisher"));
     
     // Get database
-    let db = mongo.database("rscord");
+    let db = mongo.database("radiate");
 
     let state = ChatState {
         db,

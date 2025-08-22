@@ -28,8 +28,8 @@ impl EnhancedJwtValidator {
     pub fn new(secret: String, issuer: Option<String>, audience: Option<String>) -> Self {
         Self {
             secret,
-            issuer: issuer.unwrap_or_else(|| "rscord-auth".to_string()),
-            audience: audience.unwrap_or_else(|| "rscord-api".to_string()),
+            issuer: issuer.unwrap_or_else(|| "radiate-auth".to_string()),
+            audience: audience.unwrap_or_else(|| "radiate-api".to_string()),
             max_age_seconds: 3600, // 1 hour default
         }
     }
@@ -236,8 +236,8 @@ mod tests {
     fn create_test_validator() -> EnhancedJwtValidator {
         EnhancedJwtValidator::new(
             "test_secret_key_12345".to_string(),
-            Some("rscord-auth".to_string()),
-            Some("rscord-api".to_string()),
+            Some("radiate-auth".to_string()),
+            Some("radiate-api".to_string()),
         )
     }
 
@@ -254,8 +254,8 @@ mod tests {
             roles: vec!["user".to_string()],
             exp: now + 3600, // 1 hour from now
             iat: now,
-            iss: "rscord-auth".to_string(),
-            aud: "rscord-api".to_string(),
+            iss: "radiate-auth".to_string(),
+            aud: "radiate-api".to_string(),
         }
     }
 

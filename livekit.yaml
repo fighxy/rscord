@@ -7,6 +7,17 @@ rtc:
   port_range_start: 50000
   port_range_end: 60000
   use_external_ip: true
+  # ICE servers configuration
+  ice_servers:
+    - urls: 
+      - "stun:127.0.0.1:3478"
+      - "stun:stun.l.google.com:19302"
+    - urls: "turn:127.0.0.1:3478"
+      username: "radiate_user"
+      credential: "radiate_secure_password_2024"
+    - urls: "turn:127.0.0.1:3478?transport=tcp"
+      username: "radiate_user" 
+      credential: "radiate_secure_password_2024"
 
 redis:
   address: redis:6379
@@ -17,16 +28,28 @@ keys:
 room:
   enable_recording: false
   auto_create: true
+  # Audio configuration for voice chat
+  audio:
+    active_speaker_update: 500ms
+    update_speaker_interval: 1s
 
 development: true
-
 log_level: info
 
-# WebRTC configuration
+# WebRTC configuration with TURN/STUN
 turn:
-  enabled: false
+  enabled: true
+  domain: radiate.local
+  tls_port: 5349
+  udp_port: 3478
+  tcp_port: 3478
 
 # API configuration  
 api:
   key: devkey
   secret: devsecret
+
+# Node configuration for clustering (future use)
+node:
+  ip: ""
+  port: 7880

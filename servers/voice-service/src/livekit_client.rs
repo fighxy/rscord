@@ -67,7 +67,7 @@ impl LiveKitClient {
             max_participants: config.max_participants,
             metadata: serde_json::json!({
                 "type": "voice_chat",
-                "created_by": "rscord",
+                "created_by": "radiate",
                 "auto_record": config.auto_record
             })
             .to_string(),

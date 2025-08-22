@@ -9,7 +9,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use rscord_common::{load_config, verify_jwt, AppConfig, Channel as ChannelModel, Guild as GuildModel, Id, User};
+use radiate_common::{load_config, verify_jwt, AppConfig, Channel as ChannelModel, Guild as GuildModel, Id, User};
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{info, warn};
@@ -42,7 +42,7 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let cfg: AppConfig = load_config("RSCORD").expect("load config");
+    let cfg: AppConfig = load_config("RADIATE").expect("load config");
     let addr: SocketAddr = cfg
         .bind_addr
         .as_deref()
@@ -117,7 +117,7 @@ async fn main() {
         .with_state(state)
         .layer(cors);
 
-    info!("rscord-api listening on {}", addr);
+    info!("radiate-api listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
@@ -148,10 +148,10 @@ impl AppState {
     fn new(mongo: Client, jwt_secret: String, bus: EventBus) -> Self { 
         Self { mongo, jwt_secret, bus } 
     }
-    fn users(&self) -> Collection<UserDoc> { self.mongo.database("rscord").collection("users") }
-    fn guilds(&self) -> Collection<GuildDoc> { self.mongo.database("rscord").collection("guilds") }
-    fn channels(&self) -> Collection<ChannelDoc> { self.mongo.database("rscord").collection("channels") }
-    fn messages(&self) -> Collection<MessageDoc> { self.mongo.database("rscord").collection("messages") }
+    fn users(&self) -> Collection<UserDoc> { self.mongo.database("radiate").collection("users") }
+    fn guilds(&self) -> Collection<GuildDoc> { self.mongo.database("radiate").collection("guilds") }
+    fn channels(&self) -> Collection<ChannelDoc> { self.mongo.database("radiate").collection("channels") }
+    fn messages(&self) -> Collection<MessageDoc> { self.mongo.database("radiate").collection("messages") }
 }
 
 #[derive(Deserialize)]

@@ -3,7 +3,8 @@ use redis::{AsyncCommands, Client, RedisResult};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{error, info, warn};
+use tracing::{info, warn};
+use futures_util::StreamExt;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -119,7 +120,7 @@ impl RedisPubSubManager {
     pub async fn publish(&self, channel: &str, message: &RedisMessage) -> RedisResult<()> {
         let msg_json = serde_json::to_string(message).map_err(|e| {
             redis::RedisError::from((
-                redis::ErrorKind::Serialize,
+                redis::ErrorKind::TypeError,
                 "Failed to serialize message",
                 e.to_string(),
             ))
@@ -134,7 +135,7 @@ impl RedisPubSubManager {
     pub async fn publish_to_many(&self, channels: Vec<String>, message: &RedisMessage) -> RedisResult<()> {
         let msg_json = serde_json::to_string(message).map_err(|e| {
             redis::RedisError::from((
-                redis::ErrorKind::Serialize,
+                redis::ErrorKind::TypeError,
                 "Failed to serialize message",
                 e.to_string(),
             ))
@@ -150,9 +151,10 @@ impl RedisPubSubManager {
     /// Get messages from subscription (non-blocking)
     pub async fn get_message(&self) -> RedisResult<Option<(String, RedisMessage)>> {
         let mut pubsub = self.pubsub.write().await;
+        let mut msg_stream = pubsub.on_message();
         
-        match pubsub.on_message().next_message().await {
-            Ok(msg) => {
+        let result = match msg_stream.next().await {
+            Some(msg) => {
                 let channel = msg.get_channel_name().to_string();
                 let payload: String = msg.get_payload()?;
                 
@@ -164,11 +166,10 @@ impl RedisPubSubManager {
                     }
                 }
             }
-            Err(e) => {
-                error!("Error receiving message: {}", e);
-                Err(e)
-            }
-        }
+            None => Ok(None)
+        };
+        
+        result
     }
     
     // Session management
@@ -230,7 +231,7 @@ impl RedisPubSubManager {
         let count: u32 = conn.incr(&key, 1).await?;
         
         if count == 1 {
-            conn.expire(&key, window_seconds as i64).await?;
+            conn.expire::<_, ()>(&key, window_seconds as i64).await?;
         }
         
         Ok(count <= max_requests)

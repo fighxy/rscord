@@ -11,7 +11,7 @@ impl EventBus {
     pub async fn connect(uri: &str) -> Result<Self> {
         let conn = Connection::connect(uri, ConnectionProperties::default()).await?;
         let channel = conn.create_channel().await?;
-        channel.exchange_declare("rscord.events", lapin::ExchangeKind::Topic, ExchangeDeclareOptions { durable: true, ..Default::default() }, FieldTable::default()).await?;
+        channel.exchange_declare("radiate.events", lapin::ExchangeKind::Topic, ExchangeDeclareOptions { durable: true, ..Default::default() }, FieldTable::default()).await?;
         Ok(Self { channel: Some(channel) })
     }
 
@@ -30,7 +30,7 @@ impl EventBus {
             let body = serde_json::to_vec(payload)?;
             channel
                 .basic_publish(
-                    "rscord.events",
+                    "radiate.events",
                     routing_key,
                     BasicPublishOptions::default(),
                     &body,

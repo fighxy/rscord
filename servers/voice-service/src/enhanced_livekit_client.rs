@@ -182,7 +182,7 @@ impl EnhancedLiveKitClient {
         // Enhanced room metadata with VAD settings
         let metadata = serde_json::json!({
             "type": "voice_chat",
-            "created_by": "rscord",
+            "created_by": "radiate",
             "auto_record": config.auto_record,
             "voice_activation": {
                 "enabled": config.voice_activation.enabled,

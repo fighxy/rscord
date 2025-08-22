@@ -248,7 +248,6 @@ async fn message_handler(bot: Bot, msg: Message, state: AppState) -> ResponseRes
                 }
             }
 // Removed password-based states - now using Telegram-only authentication
-            }
             UserState::LoggingInUsername => {
                 // Check if user exists and login directly
                 let user = msg.from().unwrap();

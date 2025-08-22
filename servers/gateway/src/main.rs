@@ -1,6 +1,6 @@
 use axum::{
     body::Body,
-    extract::{Request, State, ws::WebSocketUpgrade},
+    extract::{Request, State},
     http::{header, Method, StatusCode, Uri},
     response::{IntoResponse, Response},
     routing::{any, get},
@@ -9,7 +9,7 @@ use axum::{
 use http_body_util::BodyExt;
 use hyper_util::client::legacy::Client;
 use hyper_util::rt::TokioExecutor;
-use rscord_common::{load_config, AppConfig};
+use radiate_common::{load_config, AppConfig};
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -39,7 +39,7 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let cfg: AppConfig = load_config("RSCORD").expect("load config");
+    let cfg: AppConfig = load_config("RADIATE").expect("load config");
     
     // Читаем конфигурацию из переменной окружения или используем по умолчанию
     let bind_address = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());

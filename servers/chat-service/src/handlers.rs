@@ -5,8 +5,8 @@ use axum::{
     response::Json,
 };
 use mongodb::{bson::doc, Collection};
-use rscord_common::verify_jwt;
-use rscord_events::ChatEvent;
+use radiate_common::verify_jwt;
+use radiate_events::ChatEvent;
 use serde_json::Value;
 use tracing::{error, info};
 
@@ -43,8 +43,8 @@ pub async fn create_guild(
     let member = GuildMember::new(guild.id.clone(), user_id.clone());
 
     // Save guild and member to MongoDB
-    let guilds: Collection<Guild> = state.mongo.database("rscord").collection("guilds");
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let guilds: Collection<Guild> = state.mongo.database("radiate").collection("guilds");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
 
     guilds
         .insert_one(&guild)
@@ -73,7 +73,7 @@ pub async fn create_guild(
         None,
     );
 
-    let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
+    let channels: Collection<Channel> = state.mongo.database("radiate").collection("channels");
     channels
         .insert_many([&general_channel, &voice_channel])
         .await
@@ -89,8 +89,8 @@ pub async fn get_user_guilds(
 ) -> Result<Json<Vec<Guild>>, StatusCode> {
     let user_id = get_user_from_request(&state, &headers).await?;
 
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
-    let guilds: Collection<Guild> = state.mongo.database("rscord").collection("guilds");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
+    let guilds: Collection<Guild> = state.mongo.database("radiate").collection("guilds");
 
     // Find all guilds where user is a member
     let mut cursor = members
@@ -127,7 +127,7 @@ pub async fn get_guild(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check if user is member of the guild
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     let _member = members
         .find_one(doc! {"guild_id": &guild_id, "user_id": &user_id})
         .await
@@ -135,7 +135,7 @@ pub async fn get_guild(
         .ok_or(StatusCode::FORBIDDEN)?;
 
     // Get guild
-    let guilds: Collection<Guild> = state.mongo.database("rscord").collection("guilds");
+    let guilds: Collection<Guild> = state.mongo.database("radiate").collection("guilds");
     let guild = guilds
         .find_one(doc! {"_id": &guild_id})
         .await
@@ -143,7 +143,7 @@ pub async fn get_guild(
         .ok_or(StatusCode::NOT_FOUND)?;
 
     // Get channels
-    let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
+    let channels: Collection<Channel> = state.mongo.database("radiate").collection("channels");
     let mut cursor = channels
         .find(doc! {"guild_id": &guild_id})
         .await
@@ -170,7 +170,7 @@ pub async fn get_guild_channels(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check if user is member of the guild
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     members
         .find_one(doc! {"guild_id": &guild_id, "user_id": &user_id})
         .await
@@ -178,7 +178,7 @@ pub async fn get_guild_channels(
         .ok_or(StatusCode::FORBIDDEN)?;
 
     // Get channels
-    let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
+    let channels: Collection<Channel> = state.mongo.database("radiate").collection("channels");
     let mut cursor = channels
         .find(doc! {"guild_id": &guild_id})
         .await
@@ -201,7 +201,7 @@ pub async fn get_guild_members(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check if user is member of the guild
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     members
         .find_one(doc! {"guild_id": &guild_id, "user_id": &user_id})
         .await
@@ -231,7 +231,7 @@ pub async fn join_guild(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check if guild exists
-    let guilds: Collection<Guild> = state.mongo.database("rscord").collection("guilds");
+    let guilds: Collection<Guild> = state.mongo.database("radiate").collection("guilds");
     guilds
         .find_one(doc! {"_id": &guild_id})
         .await
@@ -239,7 +239,7 @@ pub async fn join_guild(
         .ok_or(StatusCode::NOT_FOUND)?;
 
     // Check if user is already a member
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     if members
         .find_one(doc! {"guild_id": &guild_id, "user_id": &user_id})
         .await
@@ -279,7 +279,7 @@ pub async fn leave_guild(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Remove user from guild
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     let result = members
         .delete_one(doc! {"guild_id": &guild_id, "user_id": &user_id})
         .await
@@ -313,7 +313,7 @@ pub async fn create_channel(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check if user is member of the guild
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     members
         .find_one(doc! {"guild_id": &create_req.guild_id, "user_id": &user_id})
         .await
@@ -329,7 +329,7 @@ pub async fn create_channel(
     );
 
     // Save channel to MongoDB
-    let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
+    let channels: Collection<Channel> = state.mongo.database("radiate").collection("channels");
     channels
         .insert_one(&channel)
         .await
@@ -346,7 +346,7 @@ pub async fn get_channel(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Get channel
-    let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
+    let channels: Collection<Channel> = state.mongo.database("radiate").collection("channels");
     let channel = channels
         .find_one(doc! {"_id": &channel_id})
         .await
@@ -354,7 +354,7 @@ pub async fn get_channel(
         .ok_or(StatusCode::NOT_FOUND)?;
 
     // Check if user is member of the guild
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     members
         .find_one(doc! {"guild_id": &channel.guild_id, "user_id": &user_id})
         .await
@@ -374,14 +374,14 @@ pub async fn get_messages(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check channel access
-    let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
+    let channels: Collection<Channel> = state.mongo.database("radiate").collection("channels");
     let channel = channels
         .find_one(doc! {"_id": &channel_id})
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     members
         .find_one(doc! {"guild_id": &channel.guild_id, "user_id": &user_id})
         .await
@@ -389,7 +389,7 @@ pub async fn get_messages(
         .ok_or(StatusCode::FORBIDDEN)?;
 
     // Get messages
-    let messages: Collection<Message> = state.mongo.database("rscord").collection("messages");
+    let messages: Collection<Message> = state.mongo.database("radiate").collection("messages");
     let limit = query.limit.unwrap_or(50).min(100) as i64;
 
     let mut cursor = messages
@@ -419,14 +419,14 @@ pub async fn create_message(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check channel access
-    let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
+    let channels: Collection<Channel> = state.mongo.database("radiate").collection("channels");
     let channel = channels
         .find_one(doc! {"_id": &channel_id})
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     members
         .find_one(doc! {"guild_id": &channel.guild_id, "user_id": &user_id})
         .await
@@ -436,7 +436,7 @@ pub async fn create_message(
     let message = Message::new(channel_id.clone(), user_id.clone(), create_req.content);
 
     // Save message to MongoDB
-    let messages: Collection<Message> = state.mongo.database("rscord").collection("messages");
+    let messages: Collection<Message> = state.mongo.database("radiate").collection("messages");
     messages
         .insert_one(&message)
         .await
@@ -467,7 +467,7 @@ pub async fn get_message(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Get message
-    let messages: Collection<Message> = state.mongo.database("rscord").collection("messages");
+    let messages: Collection<Message> = state.mongo.database("radiate").collection("messages");
     let message = messages
         .find_one(doc! {"_id": &message_id})
         .await
@@ -475,14 +475,14 @@ pub async fn get_message(
         .ok_or(StatusCode::NOT_FOUND)?;
 
     // Check channel access
-    let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
+    let channels: Collection<Channel> = state.mongo.database("radiate").collection("channels");
     let channel = channels
         .find_one(doc! {"_id": &message.channel_id})
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     members
         .find_one(doc! {"guild_id": &channel.guild_id, "user_id": &user_id})
         .await
@@ -500,7 +500,7 @@ pub async fn delete_message(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Get message
-    let messages: Collection<Message> = state.mongo.database("rscord").collection("messages");
+    let messages: Collection<Message> = state.mongo.database("radiate").collection("messages");
     let message = messages
         .find_one(doc! {"_id": &message_id})
         .await
@@ -542,14 +542,14 @@ pub async fn typing_indicator(
     let user_id = get_user_from_request(&state, &headers).await?;
 
     // Check channel access
-    let channels: Collection<Channel> = state.mongo.database("rscord").collection("channels");
+    let channels: Collection<Channel> = state.mongo.database("radiate").collection("channels");
     let channel = channels
         .find_one(doc! {"_id": &channel_id})
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    let members: Collection<GuildMember> = state.mongo.database("rscord").collection("guild_members");
+    let members: Collection<GuildMember> = state.mongo.database("radiate").collection("guild_members");
     members
         .find_one(doc! {"guild_id": &channel.guild_id, "user_id": &user_id})
         .await
@@ -578,7 +578,7 @@ pub async fn get_user_profile(
 ) -> Result<Json<User>, StatusCode> {
     let user_id = get_user_from_request(&state, &headers).await?;
     
-    let users: Collection<User> = state.mongo.database("rscord").collection("users");
+    let users: Collection<User> = state.mongo.database("radiate").collection("users");
     let user = users
         .find_one(doc! {"_id": &user_id})
         .await
@@ -595,7 +595,7 @@ pub async fn update_user_profile(
 ) -> Result<Json<User>, StatusCode> {
     let user_id = get_user_from_request(&state, &headers).await?;
     
-    let users: Collection<User> = state.mongo.database("rscord").collection("users");
+    let users: Collection<User> = state.mongo.database("radiate").collection("users");
     let update = doc! {
         "$set": {
             "display_name": &update_req.display_name,
@@ -646,7 +646,7 @@ pub async fn update_user_status(
 pub async fn update_user_settings(
     State(state): State<ChatState>,
     headers: HeaderMap,
-    Json(settings_req): Json<UpdateSettingsRequest>,
+    Json(_settings_req): Json<UpdateSettingsRequest>,
 ) -> Result<Json<UpdateSettingsResponse>, StatusCode> {
     let _user_id = get_user_from_request(&state, &headers).await?;
     

@@ -3,7 +3,7 @@ use lapin::{
     options::*, types::FieldTable, BasicProperties, Connection,
     ConnectionProperties, Channel,
 };
-use rscord_events::ChatEvent;
+use radiate_events::ChatEvent;
 use serde_json;
 use std::sync::Arc;
 use tokio::sync::RwLock;

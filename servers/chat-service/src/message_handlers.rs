@@ -1,11 +1,10 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::StatusCode,
     response::Json,
     Extension,
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 
 use crate::models::{Message, Reaction, Attachment};
 use crate::ChatState;
@@ -24,7 +23,7 @@ pub struct ReactionResponse {
 }
 
 pub async fn add_reaction(
-    State(state): State<Arc<ChatState>>,
+    State(state): State<ChatState>,
     Path((channel_id, message_id)): Path<(String, String)>,
     Extension(user_id): Extension<String>,
     Json(request): Json<AddReactionRequest>,
@@ -88,7 +87,7 @@ pub async fn add_reaction(
 }
 
 pub async fn remove_reaction(
-    State(state): State<Arc<ChatState>>,
+    State(state): State<ChatState>,
     Path((channel_id, message_id, emoji)): Path<(String, String, String)>,
     Extension(user_id): Extension<String>,
 ) -> Result<StatusCode, StatusCode> {
@@ -138,7 +137,7 @@ pub struct AddAttachmentRequest {
 }
 
 pub async fn add_attachment(
-    State(state): State<Arc<ChatState>>,
+    State(state): State<ChatState>,
     Path((channel_id, message_id)): Path<(String, String)>,
     Json(request): Json<AddAttachmentRequest>,
 ) -> Result<Json<Attachment>, StatusCode> {
@@ -172,7 +171,7 @@ pub async fn add_attachment(
 }
 
 pub async fn get_reactions(
-    State(state): State<Arc<ChatState>>,
+    State(state): State<ChatState>,
     Path((channel_id, message_id)): Path<(String, String)>,
 ) -> Result<Json<Vec<Reaction>>, StatusCode> {
     let messages = state.db.collection::<Message>("messages");
@@ -197,7 +196,7 @@ pub struct EditMessageRequest {
 }
 
 pub async fn edit_message(
-    State(state): State<Arc<ChatState>>,
+    State(state): State<ChatState>,
     Path((channel_id, message_id)): Path<(String, String)>,
     Extension(user_id): Extension<String>,
     Json(request): Json<EditMessageRequest>,
@@ -213,7 +212,7 @@ pub async fn edit_message(
     let update = mongodb::bson::doc! {
         "$set": {
             "content": &request.content,
-            "edited_at": chrono::Utc::now(),
+            "edited_at": mongodb::bson::DateTime::now(),
         }
     };
     
@@ -232,7 +231,7 @@ pub async fn edit_message(
 }
 
 pub async fn delete_message(
-    State(state): State<Arc<ChatState>>,
+    State(state): State<ChatState>,
     Path((channel_id, message_id)): Path<(String, String)>,
     Extension(user_id): Extension<String>,
 ) -> Result<StatusCode, StatusCode> {

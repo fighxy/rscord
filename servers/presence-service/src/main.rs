@@ -10,7 +10,7 @@ use axum::{
 };
 
 use presence::{PresenceManager, UserPresence, UserStatus};
-use rscord_common::{load_config, AppConfig};
+use radiate_common::{load_config, AppConfig};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::Arc;

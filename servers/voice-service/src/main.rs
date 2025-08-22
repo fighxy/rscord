@@ -13,7 +13,7 @@ use axum::{
 use enhanced_livekit_client::{EnhancedLiveKitClient, VoicePermissions, VoiceRoomConfig, VoiceActivationConfig, LiveKitConfig};
 use mongodb::Client as MongoClient;
 use room_manager::{VoiceRoomManager, RoomStats};
-use rscord_common::{
+use radiate_common::{
     load_config, AppConfig,
     EnhancedJwtValidator, PermissionChecker, RateLimiter, rate_limit_middleware,
     extract_user_id_secure, require_guild_permission, require_channel_permission,
@@ -129,7 +129,7 @@ async fn main() {
         .init();
 
     // Load configuration
-    let cfg: AppConfig = load_config("RSCORD").expect("Failed to load config");
+    let cfg: AppConfig = load_config("RADIATE").expect("Failed to load config");
     let bind_address = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
     let voice_port = std::env::var("VOICE_PORT").unwrap_or_else(|_| "14705".to_string());
     let addr: SocketAddr = format!("{}:{}", bind_address, voice_port)
@@ -155,7 +155,7 @@ async fn main() {
     let mongo_client = MongoClient::with_uri_str(mongo_uri)
         .await
         .expect("Failed to connect to MongoDB");
-    let mongo_db = mongo_client.database("rscord");
+    let mongo_db = mongo_client.database("radiate");
 
     // Initialize enhanced security components
     let jwt_validator = Arc::new(EnhancedJwtValidator::new(
@@ -377,7 +377,7 @@ async fn create_voice_room(
         state.permission_checker,
         &headers,
         &request.guild_id,
-        rscord_common::permissions::Permissions::MANAGE_CHANNELS
+        radiate_common::permissions::Permissions::MANAGE_CHANNELS
     );
 
     let config = VoiceRoomConfig {
@@ -452,7 +452,7 @@ async fn join_voice_room(
         &headers,
         &room.guild_id,
         &room.channel_id,
-        rscord_common::permissions::Permissions::CONNECT
+        radiate_common::permissions::Permissions::CONNECT
     );
 
     let permissions = VoicePermissions {
@@ -526,7 +526,7 @@ async fn delete_voice_room(
                 state.permission_checker,
                 &headers,
                 &room.guild_id,
-                rscord_common::permissions::Permissions::MANAGE_CHANNELS
+                radiate_common::permissions::Permissions::MANAGE_CHANNELS
             );
             user_id
         }

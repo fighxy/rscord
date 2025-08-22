@@ -37,13 +37,13 @@ impl Default for AppConfig {
             redis_uri: Some("redis://127.0.0.1:6379/".into()),
             rabbitmq_uri: Some("amqp://guest:guest@127.0.0.1:5672/%2f".into()),
             s3_endpoint: Some("http://127.0.0.1:9000".into()),
-            s3_bucket: Some("rscord".into()),
+            s3_bucket: Some("radiate".into()),
             s3_access_key: Some("minioadmin".into()),
             s3_secret_key: Some("minioadmin".into()),
             jwt_secret: Some("dev_secret_change_me".into()),
             // Enhanced security defaults
-            jwt_issuer: Some("rscord-auth".into()),
-            jwt_audience: Some("rscord-api".into()),
+            jwt_issuer: Some("radiate-auth".into()),
+            jwt_audience: Some("radiate-api".into()),
             rate_limit_redis_uri: Some("redis://127.0.0.1:6379/1".into()),
             enable_rate_limiting: Some(true),
             enable_circuit_breaker: Some(true),
@@ -74,12 +74,12 @@ pub fn load_config(env_prefix: &str) -> Result<AppConfig, ConfigError> {
         .set_default("enable_rate_limiting", AppConfig::default().enable_rate_limiting.unwrap())?
         .set_default("enable_circuit_breaker", AppConfig::default().enable_circuit_breaker.unwrap())?;
 
-    // Optional: load rscord.toml near binary
-    if let Ok(toml) = std::fs::read_to_string("rscord.toml") {
+    // Optional: load radiate.toml near binary
+    if let Ok(toml) = std::fs::read_to_string("radiate.toml") {
         builder = builder.add_source(cfg::File::from_str(&toml, cfg::FileFormat::Toml));
     }
 
-    // ENV overrides: RSCORD__KEY=value
+    // ENV overrides: RADIATE__KEY=value
     builder = builder.add_source(cfg::Environment::with_prefix(env_prefix).separator("__"));
 
     let config: AppConfig = builder.build()?.try_deserialize()?;

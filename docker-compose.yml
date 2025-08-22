@@ -9,7 +9,7 @@ services:
     volumes:
       - mongo_data:/data/db
     environment:
-      - MONGO_INITDB_DATABASE=rscord
+      - MONGO_INITDB_DATABASE=radiate
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
@@ -94,6 +94,20 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Coturn - STUN/TURN server для WebRTC NAT traversal
+  coturn:
+    image: coturn/coturn:latest
+    container_name: radiate-coturn
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./coturn/turnserver.conf:/etc/turnserver.conf:ro
+    command: ["-c", "/etc/turnserver.conf"]
+    environment:
+      - TURN_USERNAME=radiate_user
+      - TURN_PASSWORD=radiate_secure_password_2024
+      - TURN_REALM=radiate.local
 
   # MailDev - для тестирования email (опционально)
   maildev:

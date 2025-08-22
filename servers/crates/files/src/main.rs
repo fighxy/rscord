@@ -1,6 +1,6 @@
 use axum::{extract::Query, routing::get, Json, Router};  // Убрал post, если не нужен
 use aws_sdk_s3::{Client as S3Client, config::{Credentials, Region}, presigning::PresigningConfig};
-use rscord_common::load_config;
+use radiate_common::load_config;
 use std::net::SocketAddr;
 use tracing::info;
 use serde::{Deserialize, Serialize};
@@ -12,7 +12,7 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let cfg = load_config("RSCORD").expect("load config");
+    let cfg = load_config("RADIATE").expect("load config");
     let addr: SocketAddr = cfg
         .bind_addr
         .as_deref()
@@ -24,7 +24,7 @@ async fn main() {
         .route("/health", get(|| async { "ok" }))
         .route("/files/presign-put", get(presign_put))
         .route("/files/presign-get", get(presign_get));
-    info!("rscord-files listening on {}", addr);
+    info!("radiate-files listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
@@ -36,7 +36,7 @@ struct PresignQuery { key: String, expires: Option<u64> }
 struct PresignResponse { url: String }
 
 async fn presign_put(Query(q): Query<PresignQuery>) -> Json<PresignResponse> {
-    let cfg = load_config("RSCORD").expect("cfg");
+    let cfg = load_config("RADIATE").expect("cfg");
     let s3 = s3_client(&cfg).await;
     let bucket = cfg.s3_bucket.expect("S3 bucket not configured");
     let expires = q.expires.unwrap_or(300);
@@ -51,7 +51,7 @@ async fn presign_put(Query(q): Query<PresignQuery>) -> Json<PresignResponse> {
 }
 
 async fn presign_get(Query(q): Query<PresignQuery>) -> Json<PresignResponse> {
-    let cfg = load_config("RSCORD").expect("cfg");
+    let cfg = load_config("RADIATE").expect("cfg");
     let s3 = s3_client(&cfg).await;
     let bucket = cfg.s3_bucket.expect("S3 bucket not configured");
     let expires = q.expires.unwrap_or(300);
@@ -65,7 +65,7 @@ async fn presign_get(Query(q): Query<PresignQuery>) -> Json<PresignResponse> {
     Json(PresignResponse { url: presigned.uri().to_string() })
 }
 
-async fn s3_client(cfg: &rscord_common::AppConfig) -> S3Client {
+async fn s3_client(cfg: &radiate_common::AppConfig) -> S3Client {
     let credentials = Credentials::new(
         cfg.s3_access_key.as_ref().unwrap_or(&"minioadmin".to_string()),
         cfg.s3_secret_key.as_ref().unwrap_or(&"minioadmin".to_string()),

@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# RSCORD Backend Startup Script for 5.35.83.143
+# RADIATE Backend Startup Script for 5.35.83.143
 # This script starts all microservices
 
-echo "🚀 Starting RSCORD Backend Services..."
+echo "🚀 Starting RADIATE Backend Services..."
 
 # Set environment variables
 export BIND_ADDRESS="0.0.0.0"
-export RSCORD_CONFIG_PATH="./rscord.toml"
+export RADIATE_CONFIG_PATH="./radiate.toml"
 
 # Function to start a service
 start_service() {
@@ -104,7 +104,7 @@ check_service "Presence Service" "14706"
 check_service "API Gateway" "14700"
 
 echo "=================================="
-echo "🎉 RSCORD Backend is starting up!"
+echo "🎉 RADIATE Backend is starting up!"
 echo "🌐 API Gateway: http://5.35.83.143:14700"
 echo "📱 Desktop app should connect to: http://5.35.83.143:14700"
 echo "=================================="
