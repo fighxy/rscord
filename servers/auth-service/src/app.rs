@@ -34,6 +34,7 @@ pub async fn create_auth_app(state: AuthState) -> Router {
         .route("/api/auth/suggest-username", post(handlers::suggest_username_endpoint))
         .route("/api/auth/telegram", post(handlers::telegram_auth))
         .route("/api/users/@:username", get(handlers::find_user_by_username))
+        .route("/api/users/telegram/:telegram_id", get(handlers::find_user_by_telegram_id))
         .with_state(state)
         .layer(cors)
 }

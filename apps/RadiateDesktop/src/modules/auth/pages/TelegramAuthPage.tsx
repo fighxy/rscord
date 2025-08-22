@@ -38,27 +38,23 @@ export default function TelegramAuthPage() {
     setIsLoading(true);
     
     try {
-      // Симуляция запроса к серверу
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Импортируем authAPI
+      const { authAPI } = await import('../api');
       
-      // Пока сервер не реализован, всегда возвращаем ошибку
-      throw new Error("Неправильный код подтверждения");
+      // Проверяем код через auth-service
+      const response = await authAPI.verifyTelegramCode({ code });
       
-      // Этот код будет использоваться когда сервер будет готов:
-      // const response = await fetch('/api/auth/telegram/verify', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ code })
-      // });
-      // 
-      // if (!response.ok) {
-      //   throw new Error("Неправильный код подтверждения");
-      // }
-      // 
-      // const data = await response.json();
-      // setToken(data.token);
-      // setUser(data.user);
-      // navigate("/initialization");
+      // Сохраняем токен и пользователя
+      setToken(response.access_token);
+      if (response.user) {
+        setUser({
+          ...response.user,
+          displayName: response.user.display_name
+        });
+      }
+      
+      // Переходим к главному экрану
+      navigate("/initialization");
       
     } catch (error: any) {
       console.error("Telegram auth error:", error);
@@ -118,19 +114,19 @@ export default function TelegramAuthPage() {
               </div>
             </div>
 
-            {/* Development Notice */}
-            <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+            {/* Success Notice */}
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
-                  <svg className="w-5 h-5 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"/>
+                  <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                   </svg>
                 </div>
                 <div>
-                  <h4 className="text-orange-400 font-semibold text-sm mb-1">В разработке</h4>
-                  <p className="text-orange-300 text-xs">
-                    Telegram-бот сервер находится в разработке. 
-                    Авторизация временно недоступна.
+                  <h4 className="text-green-400 font-semibold text-sm mb-1">Готово к использованию</h4>
+                  <p className="text-green-300 text-xs">
+                    Telegram-бот подключен к серверу. 
+                    Получите код в боте и введите его ниже.
                   </p>
                 </div>
               </div>

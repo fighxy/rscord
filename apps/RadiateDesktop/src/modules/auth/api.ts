@@ -16,6 +16,10 @@ export interface TelegramAuthRequest {
   auth_code: string;
 }
 
+export interface TelegramCodeRequest {
+  code: string;
+}
+
 export interface CreateTelegramAuthRequest {
   app_name?: string;
 }
@@ -275,6 +279,94 @@ export const authAPI = {
       
       return await response.json();
     } catch (error: any) {
+      throw error;
+    }
+  },
+
+  // Telegram authentication methods
+  async createTelegramAuth(data: CreateTelegramAuthRequest = {}): Promise<CreateTelegramAuthResponse> {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_CREATE}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Не удалось создать код для Telegram аутентификации');
+      }
+      
+      return await response.json();
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  async checkTelegramAuth(authCode: string): Promise<CheckTelegramAuthResponse> {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_CHECK}?auth_code=${authCode}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Не удалось проверить статус Telegram аутентификации');
+      }
+      
+      return await response.json();
+    } catch (error: any) {
+      throw error;
+    }
+  },
+
+  async telegramAuth(data: TelegramAuthRequest): Promise<AuthResponse> {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_AUTH}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw { statusCode: response.status, response: { data: errorData } };
+      }
+      
+      return await response.json();
+    } catch (error: any) {
+      if (error.statusCode === 401) {
+        throw new Error('Код аутентификации неверен или истек');
+      }
+      throw error;
+    }
+  },
+
+  async verifyTelegramCode(data: TelegramCodeRequest): Promise<AuthResponse> {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_VERIFY_CODE}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw { statusCode: response.status, response: { data: errorData } };
+      }
+      
+      return await response.json();
+    } catch (error: any) {
+      if (error.statusCode === 401) {
+        throw new Error('Код неверен или истек');
+      }
       throw error;
     }
   }

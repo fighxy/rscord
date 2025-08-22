@@ -4,8 +4,8 @@ import { invoke } from '@tauri-apps/api/core';
 // Server configuration
 export const API_CONFIG = {
   // Server URLs - always use production server
-  BASE_URL: 'http://5.35.83.143:14700',
-  WS_URL: 'ws://5.35.83.143:14700',
+  BASE_URL: 'http://5.35.83.143:14701',
+  WS_URL: 'ws://5.35.83.143:14701',
   
   // API endpoints
   ENDPOINTS: {
@@ -18,6 +18,11 @@ export const API_CONFIG = {
       VERIFY: '/api/auth/verify',
       CHECK_USERNAME: '/api/auth/check-username',
       SUGGEST_USERNAME: '/api/auth/suggest-username',
+      // Telegram Auth
+      TELEGRAM_AUTH: '/api/auth/telegram',
+      TELEGRAM_CREATE: '/api/telegram/auth/create',
+      TELEGRAM_CHECK: '/api/telegram/auth/check',
+      TELEGRAM_VERIFY_CODE: '/api/auth/telegram/verify-code',
     },
     // User
     USER: {

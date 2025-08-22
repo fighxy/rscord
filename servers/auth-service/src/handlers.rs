@@ -352,6 +352,32 @@ pub async fn find_user_by_username(
     Ok(Json(user))
 }
 
+pub async fn find_user_by_telegram_id(
+    State(state): State<AuthState>,
+    axum::extract::Path(telegram_id): axum::extract::Path<i64>,
+) -> Result<Json<User>, StatusCode> {
+    let users: Collection<UserDoc> = state.mongo.database("radiate").collection("users");
+    let filter = doc! {"telegram_id": &telegram_id};
+    
+    let user_doc = users
+        .find_one(filter)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    let user = User {
+        id: Id(Ulid::from_string(&user_doc.id).map_err(|_| StatusCode::BAD_REQUEST)?),
+        telegram_id: user_doc.telegram_id,
+        telegram_username: user_doc.telegram_username,
+        email: user_doc.email,
+        username: user_doc.username,
+        display_name: user_doc.display_name,
+        created_at: user_doc.created_at,
+    };
+
+    Ok(Json(user))
+}
+
 pub async fn telegram_register(
     State(state): State<AuthState>,
     Json(body): Json<TelegramRegisterRequest>,
@@ -596,20 +622,46 @@ pub async fn telegram_request_code(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::NOT_FOUND)?;
     
-    // Generate 6-digit code
+    // Check if there's already an active code for this user
+    let codes = state.auth_codes.read().await;
+    let now = chrono::Utc::now();
+    
+    // Find existing active code for this telegram_id and username
+    for (existing_code, auth_code) in codes.iter() {
+        if auth_code.telegram_id == body.telegram_id 
+            && auth_code.username == body.username 
+            && now < auth_code.expires_at {
+            // There's still an active code
+            let remaining_seconds = (auth_code.expires_at - now).num_seconds();
+            drop(codes); // Release read lock
+            
+            return Ok(Json(TelegramRequestCodeResponse {
+                code: existing_code.clone(),
+                expires_in: remaining_seconds,
+            }));
+        }
+    }
+    drop(codes); // Release read lock
+    
+    // Clean up expired codes first
+    let mut codes_write = state.auth_codes.write().await;
+    codes_write.retain(|_, auth_code| now < auth_code.expires_at);
+    
+    // Generate new 6-digit code
     let code = generate_six_digit_code();
-    let expires_at = chrono::Utc::now() + chrono::Duration::minutes(10);
+    let expires_at = now + chrono::Duration::minutes(10);
     
     let auth_code = crate::AuthCode {
         code: code.clone(),
         telegram_id: body.telegram_id,
         username: body.username,
-        created_at: chrono::Utc::now(),
+        created_at: now,
         expires_at,
     };
     
     // Store the code
-    state.auth_codes.write().await.insert(code.clone(), auth_code);
+    codes_write.insert(code.clone(), auth_code);
+    drop(codes_write);
     
     Ok(Json(TelegramRequestCodeResponse {
         code,
