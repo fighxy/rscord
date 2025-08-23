@@ -4,8 +4,9 @@ use livekit_api::{
 };
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
+#[derive(Clone)]
 pub struct LiveKitClient {
     client: RoomClient,
     api_key: String,
@@ -13,7 +14,7 @@ pub struct LiveKitClient {
     host: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct VoiceRoomConfig {
     pub max_participants: u32,
     pub enable_recording: bool,
@@ -57,9 +58,19 @@ impl LiveKitClient {
     pub async fn create_voice_room(
         &self,
         room_name: &str,
-        _config: VoiceRoomConfig,
+        config: VoiceRoomConfig,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let options = CreateRoomOptions::default();
+        let options = CreateRoomOptions {
+            name: room_name.to_string(),
+            empty_timeout: config.empty_timeout.as_secs() as u32,
+            max_participants: config.max_participants,
+            metadata: Some(serde_json::json!({
+                "type": "voice_chat",
+                "created_by": "radiate",
+                "auto_record": config.auto_record
+            }).to_string()),
+            ..Default::default()
+        };
 
         match self.client.create_room(room_name, options).await {
             Ok(room) => {
@@ -100,12 +111,12 @@ impl LiveKitClient {
     ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         let video_grants = VideoGrants {
             room_join: true,
-            room: room_name.to_string(),
-            can_publish: permissions.can_speak,
-            can_subscribe: true,
-            can_publish_data: permissions.can_send_data,
-            hidden: false,
-            recorder: permissions.is_recorder,
+            room: Some(room_name.to_string()),
+            can_publish: Some(permissions.can_speak),
+            can_subscribe: Some(true),
+            can_publish_data: Some(permissions.can_send_data),
+            hidden: Some(false),
+            recorder: Some(permissions.is_recorder),
             ..Default::default()
         };
 
@@ -125,7 +136,7 @@ impl LiveKitClient {
 
     /// List all active rooms
     pub async fn list_rooms(&self) -> Result<Vec<RoomInfo>, Box<dyn std::error::Error + Send + Sync>> {
-        match self.client.list_rooms(vec![]).await {
+        match self.client.list_rooms().await {
             Ok(response) => {
                 let rooms: Vec<RoomInfo> = response
                     .into_iter()
@@ -134,7 +145,7 @@ impl LiveKitClient {
                         sid: room.sid,
                         num_participants: room.num_participants,
                         creation_time: room.creation_time,
-                        metadata: room.metadata,
+                        metadata: room.metadata.unwrap_or_default(),
                     })
                     .collect();
 
@@ -159,7 +170,7 @@ impl LiveKitClient {
                     .map(|p| ParticipantInfo {
                         sid: p.sid,
                         identity: p.identity,
-                        name: p.name,
+                        name: p.name.unwrap_or_default(),
                         is_publisher: p.permission.map_or(false, |perm| perm.can_publish),
                         joined_at: p.joined_at,
                     })

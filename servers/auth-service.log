@@ -1,0 +1,7 @@
+[2m2025-08-22T22:08:42.078673Z[0m [32m INFO[0m [2mradiate_auth_service::app[0m[2m:[0m Created unique index on users.username
+[2m2025-08-22T22:08:42.079594Z[0m [32m INFO[0m [2mradiate_auth_service::app[0m[2m:[0m Created unique index on users.telegram_id
+[2m2025-08-22T22:08:42.079996Z[0m [32m INFO[0m [2mradiate_auth_service[0m[2m:[0m Auth service listening on 0.0.0.0:14701
+
+thread 'main' panicked at auth-service/src/main.rs:34:62:
+called `Result::unwrap()` on an `Err` value: Os { code: 98, kind: AddrInUse, message: "Address already in use" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

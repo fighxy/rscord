@@ -9,7 +9,7 @@ use axum::{
     routing::{get, post, delete},
     Router,
 };
-use livekit_client::{LiveKitClient, VoiceRoomConfig};
+use livekit_client::{LiveKitClient, VoicePermissions, VoiceRoomConfig};
 use mongodb::Client as MongoClient;
 use room_manager::VoiceRoomManager;
 use radiate_common::{load_config, AppConfig, EnhancedJwtValidator};

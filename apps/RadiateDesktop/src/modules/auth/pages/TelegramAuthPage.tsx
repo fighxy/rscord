@@ -42,7 +42,7 @@ export default function TelegramAuthPage() {
       const { authAPI } = await import('../api');
       
       // Проверяем код через auth-service
-      const response = await authAPI.verifyTelegramCode({ code });
+      const response = await authAPI.verifyTelegramCode({ code, username });
       
       // Сохраняем токен и пользователя
       setToken(response.access_token);
@@ -138,6 +138,21 @@ export default function TelegramAuthPage() {
             {/* Form fields */}
             <div className="space-y-4">
               <div>
+                <label htmlFor="username" className="block text-xs font-semibold uppercase mb-2 text-muted">
+                  Имя пользователя
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  disabled={isLoading}
+                  className="form-input"
+                  placeholder="wind"
+                  autoComplete="username"
+                />
+              </div>
+              <div>
                 <label htmlFor="code" className="block text-xs font-semibold uppercase mb-2 text-muted">
                   Код подтверждения
                 </label>
@@ -161,7 +176,7 @@ export default function TelegramAuthPage() {
             {/* Submit button */}
             <button
               type="submit"
-              disabled={isLoading || code.length !== 6}
+              disabled={isLoading || code.length !== 6 || username.length < 3}
               className="btn-primary w-full"
             >
               {isLoading ? (

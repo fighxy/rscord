@@ -1,0 +1,58 @@
+use axum::{extract::{Query, State}, http::StatusCode, response::Json, routing::{get, post}, Router};
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, sync::Arc};
+use teloxide::{prelude::*, types::Me, utils::command::BotCommands};
+use tokio::sync::RwLock;
+use tower_http::cors::{Any, CorsLayer};
+use tracing::{info, warn};
+use uuid::Uuid;
+
+const BOT_TOKEN: &str = "8485874967:AAHyf9abWYBwbTrlHFcY9RaP25IvRg8jbk8Use";
+
+#[derive(Clone)]
+pub struct AppState {
+    pub bot: Bot,
+    pub bot_username: String,
+    pub auth_codes: Arc<RwLock<HashMap<String, String>>>,
+    pub user_sessions: Arc<RwLock<HashMap<i64, String>>>,
+}
+
+#[derive(BotCommands, Clone)]
+#[command(rename_rule = "lowercase")]
+enum Command {
+    #[command(description = "Показать справку")]
+    Help,
+    #[command(description = "Начать регистрацию или вход")]
+    Start,
+}
+
+#[tokio::main]
+async fn main() {
+    tracing_subscriber::fmt::init();
+    
+    let bot = Bot::new(BOT_TOKEN);
+    
+    info!("Starting simple Telegram bot...");
+    
+    teloxide::repl(bot, |bot: Bot, msg: Message| async move {
+        if let Some(text) = msg.text() {
+            if text.starts_with("/start") {
+                bot.send_message(
+                    msg.chat.id,
+                    "👋 Добро пожаловать в Radiate!\n\nЭто тестовый бот для аутентификации."
+                ).await?;
+            } else if text.starts_with("/help") {
+                bot.send_message(
+                    msg.chat.id,
+                    "🤖 Radiate Telegram Bot\n\nКоманды:\n/start - Начать\n/help - Справка"
+                ).await?;
+            } else {
+                bot.send_message(
+                    msg.chat.id,
+                    format!("Вы написали: {}\n\nИспользуйте /start для начала.", text)
+                ).await?;
+            }
+        }
+        Ok(())
+    }).await;
+}

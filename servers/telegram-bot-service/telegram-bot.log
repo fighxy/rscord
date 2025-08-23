@@ -1,0 +1,5 @@
+   Compiling radiate-telegram-bot v0.1.0 (/root/rscord/servers/telegram-bot-service)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.89s
+warning: the following packages contain code that will be rejected by a future version of Rust: redis v0.24.0
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running `/root/rscord/servers/target/debug/radiate-telegram-bot`

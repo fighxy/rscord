@@ -77,7 +77,7 @@ export interface CurrentUserResponse {
 export const authAPI = {
   async login(data: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,7 +104,7 @@ export const authAPI = {
 
   async register(data: RegisterRequest): Promise<UserResponse> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REGISTER}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.REGISTER}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export const authAPI = {
   async logout(): Promise<void> {
     try {
       // Call logout endpoint to invalidate token on server
-      await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGOUT}`, {
+      await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGOUT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ export const authAPI = {
   async getCurrentUser(): Promise<CurrentUserResponse> {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.VERIFY}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.VERIFY}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -174,7 +174,7 @@ export const authAPI = {
 
   async refreshToken(refreshToken: string): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.REFRESH}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -197,7 +197,7 @@ export const authAPI = {
   async updateProfile(data: Partial<CurrentUserResponse>): Promise<CurrentUserResponse> {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER.UPDATE}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.USER.UPDATE}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -219,7 +219,7 @@ export const authAPI = {
   async changePassword(oldPassword: string, newPassword: string): Promise<void> {
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.USER.SETTINGS}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.USER.SETTINGS}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -245,7 +245,7 @@ export const authAPI = {
 
   async checkUsername(username: string): Promise<{ available: boolean; suggested?: string; error?: string }> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.CHECK_USERNAME}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.CHECK_USERNAME}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -265,7 +265,7 @@ export const authAPI = {
 
   async suggestUsername(displayName: string): Promise<{ suggested: string }> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.SUGGEST_USERNAME}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.SUGGEST_USERNAME}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -286,7 +286,7 @@ export const authAPI = {
   // Telegram authentication methods
   async createTelegramAuth(data: CreateTelegramAuthRequest = {}): Promise<CreateTelegramAuthResponse> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_CREATE}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_CREATE}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -306,7 +306,7 @@ export const authAPI = {
 
   async checkTelegramAuth(authCode: string): Promise<CheckTelegramAuthResponse> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_CHECK}?auth_code=${authCode}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_CHECK}?auth_code=${authCode}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -325,7 +325,7 @@ export const authAPI = {
 
   async telegramAuth(data: TelegramAuthRequest): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_AUTH}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_AUTH}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -349,7 +349,7 @@ export const authAPI = {
 
   async verifyTelegramCode(data: TelegramCodeRequest): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_VERIFY_CODE}`, {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_VERIFY_CODE}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

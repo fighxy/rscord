@@ -11,11 +11,11 @@ export const ENV_CONFIG = {
   
   // Production (remote server)
   PRODUCTION: {
-    API_URL: 'http://5.35.83.143:14700',
-    WS_URL: 'ws://5.35.83.143:14700',
-    AUTH_URL: 'http://5.35.83.143:14701',
-    VOICE_URL: 'http://5.35.83.143:14705',
-    PRESENCE_URL: 'http://5.35.83.143:14706',
+    API_URL: 'http://5.35.83.143:14710',
+    WS_URL: 'ws://5.35.83.143:14710',
+    AUTH_URL: 'http://5.35.83.143:14711',
+    VOICE_URL: 'http://5.35.83.143:14715',
+    PRESENCE_URL: 'http://5.35.83.143:14716',
   },
   
   // Custom (for testing different servers)

@@ -391,13 +391,7 @@ async fn register(State(state): State<AppState>, Json(body): Json<RegisterReques
         None => generate_username_from_display_name(&body.display_name),
     };
     
-    let user = User {
-        id: Id(Ulid::new()),
-        email: body.email,
-        username: username.clone(),
-        display_name: body.display_name,
-        created_at: Utc::now(),
-    };
+let user = User {        id: Id(Ulid::new()),        telegram_id: None,        telegram_username: None,        email: Some(body.email),        username: username.clone(),        display_name: body.display_name,        created_at: Utc::now(),    };
     
     // hash password
     let salt = argon2::password_hash::SaltString::generate(&mut rand_core::OsRng);
@@ -412,7 +406,7 @@ async fn register(State(state): State<AppState>, Json(body): Json<RegisterReques
     // persist to MongoDB
     let doc = UserDoc {
         id: user.id.0.to_string(),
-        email: user.email.clone(),
+        email: user.email.clone().unwrap_or_default(),
         username: user.username.clone(),
         display_name: user.display_name.clone(),
         password_hash,
@@ -448,16 +442,8 @@ async fn get_current_user(State(state): State<AppState>, req: Request<axum::body
     let user_doc = users.find_one(filter).await
         .map_err(|_| axum::http::StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(axum::http::StatusCode::NOT_FOUND)?;
-    
-    let user = User {
-        id: Id(Ulid::from_string(&user_doc.id).map_err(|_| axum::http::StatusCode::BAD_REQUEST)?),
-        email: user_doc.email,
-        username: user_doc.username,
-        display_name: user_doc.display_name,
-        created_at: user_doc.created_at,
-    };
-    
+let user = User {        id: Id(Ulid::from_string(&user_doc.id).map_err(|_| axum::http::StatusCode::BAD_REQUEST)?),        telegram_id: None,        telegram_username: None,        email: Some(user_doc.email),        username: user_doc.username,        display_name: user_doc.display_name,        created_at: user_doc.created_at,    };
+
+
     Ok(Json(user))
 }
-
-

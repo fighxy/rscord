@@ -1,11 +1,9 @@
-use futures::TryStreamExt;
 use mongodb::{Client as MongoClient, Collection, bson::doc};
-use mongodb::bson::DateTime as BsonDateTime;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::info;
+use tracing::{info, warn, error};
 use crate::types::{VoiceRoom, VoiceSession};
 use crate::livekit_client::{LiveKitClient, VoiceRoomConfig, VoicePermissions};
 
@@ -67,7 +65,7 @@ impl VoiceRoomManager {
 
         // Store in database
         let rooms_collection: Collection<VoiceRoom> = self.db.database("radiate").collection("voice_rooms");
-        rooms_collection.insert_one(&room).await?;
+        rooms_collection.insert_one(&room, None).await?;
 
         // Update cache
         self.active_rooms.write().await.insert(room_id, room.clone());
@@ -83,7 +81,7 @@ impl VoiceRoomManager {
         user_id: &str,
         username: &str,
     ) -> Result<VoiceSession, Box<dyn std::error::Error + Send + Sync>> {
-        let _room = self.get_room_by_id(room_id).await?
+        let room = self.get_room_by_id(room_id).await?
             .ok_or("Room not found")?;
 
         let livekit_room_name = format!("room_{}", room_id);
@@ -113,7 +111,7 @@ impl VoiceRoomManager {
 
         // Store session
         let sessions_collection: Collection<VoiceSession> = self.db.database("radiate").collection("voice_sessions");
-        sessions_collection.insert_one(&session).await?;
+        sessions_collection.insert_one(&session, None).await?;
 
         // Update user sessions cache
         self.user_sessions.write().await.insert(user_id.to_string(), session.clone());
@@ -128,15 +126,12 @@ impl VoiceRoomManager {
         room_id: &str,
         user_id: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        
-        
-        
-        
         // Update session end time
         let sessions_collection: Collection<VoiceSession> = self.db.database("radiate").collection("voice_sessions");
         sessions_collection.update_one(
             doc! { "user_id": user_id, "room_id": room_id },
-            doc! { "$set": { "left_at": BsonDateTime::now() } }
+            doc! { "$set": { "left_at": chrono::Utc::now() } },
+            None
         ).await?;
 
         // Remove from active sessions
@@ -155,7 +150,7 @@ impl VoiceRoomManager {
 
         // Check database
         let rooms_collection: Collection<VoiceRoom> = self.db.database("radiate").collection("voice_rooms");
-        let room = rooms_collection.find_one(doc! { "id": room_id }).await?;
+        let room = rooms_collection.find_one(doc! { "id": room_id }, None).await?;
         
         Ok(room)
     }
@@ -178,10 +173,15 @@ impl VoiceRoomManager {
     pub async fn get_room_participants(&self, room_id: &str) -> Result<Vec<VoiceSession>, Box<dyn std::error::Error + Send + Sync>> {
         let sessions_collection: Collection<VoiceSession> = self.db.database("radiate").collection("voice_sessions");
         let cursor = sessions_collection.find(
-            doc! { "room_id": room_id, "left_at": { "$exists": false } }
+            doc! { "room_id": room_id, "left_at": { "$exists": false } }, 
+            None
         ).await?;
         
-        let participants: Vec<VoiceSession> = cursor.try_collect().await?;
+        let mut participants = Vec::new();
+        let mut cursor = cursor;
+        while let Some(session) = cursor.try_next().await? {
+            participants.push(session);
+        }
         
         Ok(participants)
     }

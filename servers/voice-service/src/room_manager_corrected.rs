@@ -1,6 +1,5 @@
 use futures::TryStreamExt;
 use mongodb::{Client as MongoClient, Collection, bson::doc};
-use mongodb::bson::DateTime as BsonDateTime;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -128,15 +127,15 @@ impl VoiceRoomManager {
         room_id: &str,
         user_id: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use mongodb::bson::DateTime as BsonDateTime;
         
-        
-        
+        let now_bson = BsonDateTime::from_chrono(chrono::Utc::now());
         
         // Update session end time
         let sessions_collection: Collection<VoiceSession> = self.db.database("radiate").collection("voice_sessions");
         sessions_collection.update_one(
             doc! { "user_id": user_id, "room_id": room_id },
-            doc! { "$set": { "left_at": BsonDateTime::now() } }
+            doc! { "$set": { "left_at": now_bson } }
         ).await?;
 
         // Remove from active sessions

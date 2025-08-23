@@ -179,11 +179,12 @@ impl EnhancedLiveKitClient {
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let client = self.pool.get_client().await?;
 
-        // Enhanced room metadata with VAD settings
+        // Enhanced room metadata with VAD settings following LiveKit best practices
         let metadata = serde_json::json!({
             "type": "voice_chat",
             "created_by": "radiate",
             "auto_record": config.auto_record,
+            "empty_timeout_seconds": config.empty_timeout.as_secs(),
             "voice_activation": {
                 "enabled": config.voice_activation.enabled,
                 "threshold": config.voice_activation.threshold,
@@ -263,7 +264,7 @@ impl EnhancedLiveKitClient {
         }
     }
 
-    /// Enhanced room deletion with retry
+    /// Enhanced room deletion with retry - disconnects all participants
     pub async fn delete_voice_room_with_retry(
         &self,
         room_name: &str,
@@ -328,6 +329,148 @@ impl EnhancedLiveKitClient {
         
         true
     }
+
+    /// Get room participants with enhanced error handling
+    pub async fn get_room_participants(
+        &self,
+        room_name: &str,
+    ) -> Result<Vec<ParticipantInfo>, Box<dyn std::error::Error + Send + Sync>> {
+        use livekit_api::services::room::ListParticipantsRequest;
+
+        let client = self.pool.get_client().await?;
+        let request = ListParticipantsRequest {
+            room: room_name.to_string(),
+        };
+
+        match client.list_participants(request).await {
+            Ok(response) => {
+                let participants: Vec<ParticipantInfo> = response
+                    .participants
+                    .into_iter()
+                    .map(|p| ParticipantInfo {
+                        sid: p.sid,
+                        identity: p.identity,
+                        name: p.name,
+                        is_publisher: p.permission.unwrap_or_default().can_publish,
+                        joined_at: p.joined_at,
+                    })
+                    .collect();
+
+                Ok(participants)
+            }
+            Err(e) => {
+                error!("Failed to get room participants: {}", e);
+                Err(e.into())
+            }
+        }
+    }
+
+    /// Mute/unmute participant with enhanced error handling
+    pub async fn set_participant_mute(
+        &self,
+        room_name: &str,
+        participant_identity: &str,
+        muted: bool,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use livekit_api::services::room::MuteRoomTrackRequest;
+
+        let client = self.pool.get_client().await?;
+        let request = MuteRoomTrackRequest {
+            room: room_name.to_string(),
+            identity: participant_identity.to_string(),
+            track_sid: String::new(),
+            muted,
+        };
+
+        match client.mute_published_track(request).await {
+            Ok(_) => {
+                info!(
+                    "Set participant {} mute status to {} in room {}",
+                    participant_identity, muted, room_name
+                );
+                Ok(())
+            }
+            Err(e) => {
+                error!("Failed to set participant mute status: {}", e);
+                Err(e.into())
+            }
+        }
+    }
+
+    /// Remove participant from room with enhanced error handling
+    pub async fn remove_participant(
+        &self,
+        room_name: &str,
+        participant_identity: &str,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use livekit_api::services::room::RemoveParticipantRequest;
+
+        let client = self.pool.get_client().await?;
+        let request = RemoveParticipantRequest {
+            room: room_name.to_string(),
+            identity: participant_identity.to_string(),
+        };
+
+        match client.remove_participant(request).await {
+            Ok(_) => {
+                info!(
+                    "Removed participant {} from room {}",
+                    participant_identity, room_name
+                );
+                Ok(())
+            }
+            Err(e) => {
+                error!("Failed to remove participant: {}", e);
+                Err(e.into())
+            }
+        }
+    }
+
+    /// List all active rooms with enhanced filtering
+    pub async fn list_rooms(&self) -> Result<Vec<RoomInfo>, Box<dyn std::error::Error + Send + Sync>> {
+        let client = self.pool.get_client().await?;
+        let request = ListRoomsRequest::default();
+
+        match client.list_rooms(request).await {
+            Ok(response) => {
+                let rooms: Vec<RoomInfo> = response
+                    .rooms
+                    .into_iter()
+                    .map(|room| RoomInfo {
+                        name: room.name,
+                        sid: room.sid,
+                        num_participants: room.num_participants,
+                        creation_time: room.creation_time,
+                        metadata: room.metadata,
+                    })
+                    .collect();
+
+                Ok(rooms)
+            }
+            Err(e) => {
+                error!("Failed to list rooms: {}", e);
+                Err(e.into())
+            }
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct RoomInfo {
+    pub name: String,
+    pub sid: String,
+    pub num_participants: u32,
+    pub creation_time: i64,
+    pub metadata: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ParticipantInfo {
+    pub sid: String,
+    pub identity: String,
+    pub name: String,
+    pub is_publisher: bool,
+    pub joined_at: i64,
 }
 
 #[derive(Debug, Clone)]

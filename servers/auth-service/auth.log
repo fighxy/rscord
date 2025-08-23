@@ -1,0 +1,124 @@
+   Compiling radiate-auth-service v0.1.0 (/root/rscord/servers/auth-service)
+warning: unused import: `std::collections::HashMap`
+  --> auth-service/src/handlers.rs:13:5
+   |
+13 | use std::collections::HashMap;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `tokio::sync::RwLock`
+  --> auth-service/src/handlers.rs:14:5
+   |
+14 | use tokio::sync::RwLock;
+   |     ^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `std::sync::Arc`
+  --> auth-service/src/handlers.rs:15:5
+   |
+15 | use std::sync::Arc;
+   |     ^^^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> auth-service/src/handlers.rs:176:22
+    |
+176 |         telegram_id: user_doc.telegram_id,
+    |                      ^^^^^^^^^^^^^^^^^^^^ expected `Option<i64>`, found `i64`
+    |
+    = note: expected enum `std::option::Option<i64>`
+               found type `i64`
+help: try wrapping the expression in `Some`
+    |
+176 |         telegram_id: Some(user_doc.telegram_id),
+    |                      +++++                    +
+
+error[E0609]: no field `email` on type `models::UserDoc`
+   --> auth-service/src/handlers.rs:178:25
+    |
+178 |         email: user_doc.email,
+    |                         ^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `telegram_id`, `telegram_username`, `username`, `display_name`, `created_at`
+
+error[E0308]: mismatched types
+   --> auth-service/src/handlers.rs:216:22
+    |
+216 |         telegram_id: user_doc.telegram_id,
+    |                      ^^^^^^^^^^^^^^^^^^^^ expected `Option<i64>`, found `i64`
+    |
+    = note: expected enum `std::option::Option<i64>`
+               found type `i64`
+help: try wrapping the expression in `Some`
+    |
+216 |         telegram_id: Some(user_doc.telegram_id),
+    |                      +++++                    +
+
+error[E0609]: no field `email` on type `models::UserDoc`
+   --> auth-service/src/handlers.rs:218:25
+    |
+218 |         email: user_doc.email,
+    |                         ^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `telegram_id`, `telegram_username`, `username`, `display_name`, `created_at`
+
+error[E0308]: mismatched types
+   --> auth-service/src/handlers.rs:344:22
+    |
+344 |         telegram_id: user_doc.telegram_id,
+    |                      ^^^^^^^^^^^^^^^^^^^^ expected `Option<i64>`, found `i64`
+    |
+    = note: expected enum `std::option::Option<i64>`
+               found type `i64`
+help: try wrapping the expression in `Some`
+    |
+344 |         telegram_id: Some(user_doc.telegram_id),
+    |                      +++++                    +
+
+error[E0609]: no field `email` on type `models::UserDoc`
+   --> auth-service/src/handlers.rs:346:25
+    |
+346 |         email: user_doc.email,
+    |                         ^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `telegram_id`, `telegram_username`, `username`, `display_name`, `created_at`
+
+error[E0308]: mismatched types
+   --> auth-service/src/handlers.rs:370:22
+    |
+370 |         telegram_id: user_doc.telegram_id,
+    |                      ^^^^^^^^^^^^^^^^^^^^ expected `Option<i64>`, found `i64`
+    |
+    = note: expected enum `std::option::Option<i64>`
+               found type `i64`
+help: try wrapping the expression in `Some`
+    |
+370 |         telegram_id: Some(user_doc.telegram_id),
+    |                      +++++                    +
+
+error[E0609]: no field `email` on type `models::UserDoc`
+   --> auth-service/src/handlers.rs:372:25
+    |
+372 |         email: user_doc.email,
+    |                         ^^^^^ unknown field
+    |
+    = note: available fields are: `id`, `telegram_id`, `telegram_username`, `username`, `display_name`, `created_at`
+
+error[E0505]: cannot move out of `codes` because it is borrowed
+   --> auth-service/src/handlers.rs:636:18
+    |
+626 |     let codes = state.auth_codes.read().await;
+    |         ----- binding `codes` declared here
+...
+630 |     for (existing_code, auth_code) in codes.iter() {
+    |                                       ----- borrow of `codes` occurs here
+...
+636 |             drop(codes); // Release read lock
+    |                  ^^^^^ move out of `codes` occurs here
+...
+639 |                 code: existing_code.clone(),
+    |                       ------------- borrow later used here
+
+Some errors have detailed explanations: E0308, E0505, E0609.
+For more information about an error, try `rustc --explain E0308`.
+warning: `radiate-auth-service` (lib) generated 3 warnings
+error: could not compile `radiate-auth-service` (lib) due to 9 previous errors; 3 warnings emitted
