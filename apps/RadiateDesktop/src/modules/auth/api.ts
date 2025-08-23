@@ -16,8 +16,13 @@ export interface TelegramAuthRequest {
   auth_code: string;
 }
 
-export interface TelegramCodeRequest {
+export interface TelegramVerifyCodeRequest {
   code: string;
+}
+
+export interface TelegramRequestCodeRequest {
+  telegram_id: number;
+  username: string;
 }
 
 export interface CreateTelegramAuthRequest {
@@ -347,7 +352,7 @@ export const authAPI = {
     }
   },
 
-  async verifyTelegramCode(data: TelegramCodeRequest): Promise<AuthResponse> {
+  async verifyTelegramCode(data: TelegramVerifyCodeRequest): Promise<AuthResponse> {
     try {
       const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_VERIFY_CODE}`, {
         method: 'POST',
@@ -362,10 +367,45 @@ export const authAPI = {
         throw { statusCode: response.status, response: { data: errorData } };
       }
       
-      return await response.json();
+      const result = await response.json();
+      // Сохраняем токен сразу после успешной верификации
+      if (result.token) {
+        localStorage.setItem('auth_token', result.token);
+        return {
+          access_token: result.token,
+          refresh_token: result.refresh_token,
+          expires_at: Date.now() + 3600000, // 1 hour
+          user: result.user
+        };
+      }
+      return result;
     } catch (error: any) {
       if (error.statusCode === 401) {
         throw new Error('Код неверен или истек');
+      }
+      throw error;
+    }
+  },
+
+  async requestTelegramCode(data: TelegramRequestCodeRequest): Promise<{ code: string; expires_in: number }> {
+    try {
+      const response = await fetch(`${API_CONFIG.AUTH_URL}${API_CONFIG.ENDPOINTS.AUTH.TELEGRAM_REQUEST_CODE}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw { statusCode: response.status, response: { data: errorData } };
+      }
+      
+      return await response.json();
+    } catch (error: any) {
+      if (error.statusCode === 404) {
+        throw new Error('Пользователь не найден. Сначала зарегистрируйтесь через Telegram бота');
       }
       throw error;
     }

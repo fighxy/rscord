@@ -21,9 +21,10 @@ export const API_CONFIG = {
       SUGGEST_USERNAME: '/api/auth/suggest-username',
       // Telegram Auth
       TELEGRAM_AUTH: '/api/auth/telegram',
-      TELEGRAM_CREATE: '/api/auth/telegram/request-code',
-      TELEGRAM_CHECK: '/api/auth/telegram/verify-code',
+      TELEGRAM_REQUEST_CODE: '/api/auth/telegram/request-code',
       TELEGRAM_VERIFY_CODE: '/api/auth/telegram/verify-code',
+      TELEGRAM_REGISTER: '/api/auth/telegram/register',
+      TELEGRAM_LOGIN: '/api/auth/telegram/login',
     },
     // User
     USER: {

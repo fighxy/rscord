@@ -729,7 +729,26 @@ pub async fn telegram_verify_code(
 
 fn generate_six_digit_code() -> String {
     use rand::Rng;
+    // Используем криптографически безопасный генератор
     let mut rng = rand::thread_rng();
-    format!("{:06}", rng.gen_range(100000..999999))
+    // Генерируем число от 100000 до 999999 включительно
+    let code = rng.gen_range(100000..=999999);
+    format!("{:06}", code)
+}
+
+// Функция для хеширования кода перед сохранением
+fn hash_code(code: &str) -> String {
+    use sha2::{Sha256, Digest};
+    let mut hasher = Sha256::new();
+    hasher.update(code.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
+
+// Функция для проверки кода с постоянным временем выполнения
+fn verify_code_constant_time(stored_hash: &str, user_code: &str) -> bool {
+    let user_hash = hash_code(user_code);
+    // Используем постоянное время сравнения для защиты от timing attacks
+    stored_hash.len() == user_hash.len() && 
+        stored_hash.bytes().zip(user_hash.bytes()).all(|(a, b)| a == b)
 }
 

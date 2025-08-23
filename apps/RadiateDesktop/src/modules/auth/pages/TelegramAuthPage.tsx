@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 
 export default function TelegramAuthPage() {
   const [code, setCode] = useState("");
+  const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   
@@ -14,6 +15,16 @@ export default function TelegramAuthPage() {
   const navigate = useNavigate();
 
   const validateForm = () => {
+    if (!username || username.length < 3) {
+      setError("Введите имя пользователя (минимум 3 символа)");
+      return false;
+    }
+    
+    if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) {
+      setError("Username может содержать только буквы, цифры и _ (3-32 символа)");
+      return false;
+    }
+    
     if (!code || code.length !== 6) {
       setError("Введите 6-значный код подтверждения");
       return false;
@@ -42,7 +53,7 @@ export default function TelegramAuthPage() {
       const { authAPI } = await import('../api');
       
       // Проверяем код через auth-service
-      const response = await authAPI.verifyTelegramCode({ code, username });
+      const response = await authAPI.verifyTelegramCode({ code });
       
       // Сохраняем токен и пользователя
       setToken(response.access_token);
