@@ -381,9 +381,15 @@ export const authAPI = {
       return result;
     } catch (error: any) {
       if (error.statusCode === 401) {
-        throw new Error('Код неверен или истек');
+        throw new Error('Код неверен или истек. Запросите новый код в Telegram боте.');
       }
-      throw error;
+      if (error.statusCode === 429) {
+        throw new Error('Слишком много попыток. Подождите 10 минут перед следующей попыткой.');
+      }
+      if (error.statusCode === 400) {
+        throw new Error('Неверный формат кода. Код должен содержать 6 цифр.');
+      }
+      throw new Error(error.message || 'Ошибка проверки кода. Попробуйте позже.');
     }
   },
 

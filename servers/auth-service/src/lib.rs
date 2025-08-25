@@ -2,17 +2,22 @@ pub mod handlers;
 pub mod models;
 pub mod app;
 pub mod username_validator;
+pub mod rate_limiter;
+pub mod background_tasks;
 
 use axum::Router;
 use mongodb::Client as MongoClient;
 use std::sync::Arc;
 
 
+use rate_limiter::RateLimiter;
+
 #[derive(Clone)]
 pub struct AuthState {
     pub mongo: MongoClient,
     pub jwt_secret: String,
     pub auth_codes: Arc<tokio::sync::RwLock<std::collections::HashMap<String, AuthCode>>>,
+    pub rate_limiter: RateLimiter,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

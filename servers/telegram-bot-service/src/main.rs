@@ -119,8 +119,10 @@ async fn command_handler(bot: Bot, msg: Message, cmd: Command, state: AppState) 
             
             bot.send_message(
                 msg.chat.id,
-                "👋 Добро пожаловать в Radiate!\n\nВыберите действие:\n\n/register - Зарегистрировать новый аккаунт\n/login - Войти в существующий аккаунт"
-            ).await?;
+                "👋 *Добро пожаловать в Radiate!*\n\nЭто бот для авторизации в приложении Radiate.\n\n🆕 *Новый пользователь?*\nИспользуйте /register\n\n🔑 *Уже есть аккаунт?*\nИспользуйте /login\n\nℹ️ *Нужна помощь?*\nИспользуйте /help"
+            )
+            .parse_mode(teloxide::types::ParseMode::MarkdownV2)
+            .await?;
         }
         Command::Register => {
             let user_id = msg.from().unwrap().id.0 as i64;
@@ -131,8 +133,10 @@ async fn command_handler(bot: Bot, msg: Message, cmd: Command, state: AppState) 
                 session.state = UserState::RegisteringUsername;
                 bot.send_message(
                     msg.chat.id,
-                    "📝 Регистрация нового аккаунта\n\nВведите желаемый username (только английские буквы, цифры и _):"
-                ).await?;
+                    "📝 *Регистрация нового аккаунта*\n\nВведите желаемый username:\n\n✅ Только английские буквы, цифры и _\n✅ От 3 до 32 символов\n\nПример: john_doe123"
+                )
+                .parse_mode(teloxide::types::ParseMode::MarkdownV2)
+                .await?;
             } else {
                 bot.send_message(msg.chat.id, "❌ Сессия не найдена. Используйте /start").await?;
             }
@@ -146,8 +150,10 @@ async fn command_handler(bot: Bot, msg: Message, cmd: Command, state: AppState) 
                 session.state = UserState::LoggingInUsername;
                 bot.send_message(
                     msg.chat.id,
-                    "🔐 Вход в аккаунт\n\nВведите ваш username:"
-                ).await?;
+                    "🔐 *Вход в аккаунт*\n\nВведите ваш username, который вы использовали при регистрации:"
+                )
+                .parse_mode(teloxide::types::ParseMode::MarkdownV2)
+                .await?;
             } else {
                 bot.send_message(msg.chat.id, "❌ Сессия не найдена. Используйте /start").await?;
             }
@@ -210,14 +216,14 @@ async fn message_handler(bot: Bot, msg: Message, state: AppState) -> ResponseRes
                             user.username.as_ref().map(|s| s.to_string())
                         ).await {
                             Ok(_) => {
-                                // Request auth code for the newly registered user
+                                // Request auth code from auth-service (it will generate and store it)
                                 match request_auth_code(user.id.0 as i64, text).await {
-                                    Ok(code) => {
+                                    Ok(response) => {
                                         session.state = UserState::LoggedInAwaitingCode { username: text.to_string() };
                                         
                                         bot.send_message(
                                             msg.chat.id,
-                                            format!("🎉 Регистрация успешна!\n\n🔑 Ваш код подтверждения:\n\n`{}`\n\nВведите этот код в приложении Radiate.", code)
+                                            format!("🎉 Регистрация успешна!\n\n🔑 Ваш код подтверждения:\n\n`{}`\n\n⏱ Код действителен {} секунд\n\nВведите этот код в приложении Radiate.", response.code, response.expires_in)
                                         ).await?;
                                     }
                                     Err(e) => {
@@ -254,14 +260,14 @@ async fn message_handler(bot: Bot, msg: Message, state: AppState) -> ResponseRes
                 
                 match verify_telegram_login(user.id.0 as i64, text).await {
                     Ok(true) => {
-                        // Request auth code for login
+                        // Request auth code from auth-service (it will generate and store it)
                         match request_auth_code(user.id.0 as i64, text).await {
-                            Ok(code) => {
+                            Ok(response) => {
                                 session.state = UserState::LoggedInAwaitingCode { username: text.to_string() };
                                 
                                 bot.send_message(
                                     msg.chat.id,
-                                    format!("✅ Вход выполнен успешно!\n\n🔑 Ваш код подтверждения:\n\n`{}`\n\nВведите этот код в приложении Radiate.", code)
+                                    format!("✅ Вход выполнен успешно!\n\n🔑 Ваш код подтверждения:\n\n`{}`\n\n⏱ Код действителен {} секунд\n\nВведите этот код в приложении Radiate.", response.code, response.expires_in)
                                 ).await?;
                             }
                             Err(e) => {
@@ -517,7 +523,13 @@ async fn verify_telegram_login(telegram_id: i64, username: &str) -> Result<bool,
     Ok(response.status().is_success())
 }
 
-async fn request_auth_code(telegram_id: i64, username: &str) -> Result<String, Box<dyn std::error::Error>> {
+#[derive(serde::Deserialize)]
+struct AuthCodeResponse {
+    code: String,
+    expires_in: i64,
+}
+
+async fn request_auth_code(telegram_id: i64, username: &str) -> Result<AuthCodeResponse, Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
     let response = client
         .post("http://127.0.0.1:14701/api/auth/telegram/request-code")
@@ -530,9 +542,10 @@ async fn request_auth_code(telegram_id: i64, username: &str) -> Result<String, B
         .await?;
     
     if response.status().is_success() {
-        let result: serde_json::Value = response.json().await?;
-        Ok(result["code"].as_str().unwrap_or("000000").to_string())
+        let result: AuthCodeResponse = response.json().await?;
+        Ok(result)
     } else {
-        Err("Failed to request auth code".into())
+        let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+        Err(format!("Failed to request auth code: {}", error_text).into())
     }
 }

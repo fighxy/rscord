@@ -1,14 +1,29 @@
 // API Configuration for RSCORD Desktop (Tauri)
 import { invoke } from '@tauri-apps/api/core';
 
-// Server configuration
+// Server configuration - Use nginx proxy
 export const API_CONFIG = {
-  // Server URLs - always use production server
-  BASE_URL: 'http://5.35.83.143:14710',
-  AUTH_URL: 'http://5.35.83.143:14701',
-  WS_URL: 'ws://5.35.83.143:14710',
+  // Main server URL (nginx proxy)
+  BASE_URL: process.env.NODE_ENV === 'production' 
+    ? 'http://5.35.83.143' 
+    : 'http://localhost:80',
   
-  // API endpoints
+  // WebSocket URLs
+  WS_URL: process.env.NODE_ENV === 'production'
+    ? 'ws://5.35.83.143/ws'
+    : 'ws://localhost:80/ws',
+  
+  // Voice WebSocket URL
+  VOICE_WS_URL: process.env.NODE_ENV === 'production'
+    ? 'ws://5.35.83.143/ws/voice'
+    : 'ws://localhost:80/ws/voice',
+  
+  // LiveKit URL
+  LIVEKIT_URL: process.env.NODE_ENV === 'production'
+    ? 'ws://5.35.83.143/livekit'
+    : 'ws://localhost:7880',
+  
+  // API endpoints (all through nginx proxy)
   ENDPOINTS: {
     // Auth
     AUTH: {
@@ -60,10 +75,11 @@ export const API_CONFIG = {
     },
     // Voice
     VOICE: {
-      JOIN: (channelId: string) => `/api/voice/channels/${channelId}/join`,
-      LEAVE: (channelId: string) => `/api/voice/channels/${channelId}/leave`,
-      MUTE: '/api/voice/mute',
-      DEAFEN: '/api/voice/deafen',
+      JOIN: '/api/voice/join',
+      LEAVE: '/api/voice/leave',
+      UPDATE_STATE: (userId: string) => `/api/voice/state/${userId}`,
+      GET_STATE: (userId: string) => `/api/voice/state/${userId}`,
+      GET_PARTICIPANTS: (channelId: string) => `/api/voice/channel/${channelId}`,
       ICE_SERVERS: '/api/voice/ice-servers',
     },
     // Files

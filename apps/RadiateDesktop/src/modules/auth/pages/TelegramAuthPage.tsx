@@ -3,28 +3,18 @@ import { useAuth } from "../store";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthError } from "../components/AuthError";
 import { Logo } from "../../../components/ui/Logo";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 
 export default function TelegramAuthPage() {
   const [code, setCode] = useState("");
-  const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [codeTimer, setCodeTimer] = useState<number>(0);
   
   const { setToken, setUser } = useAuth();
   const navigate = useNavigate();
 
   const validateForm = () => {
-    if (!username || username.length < 3) {
-      setError("Введите имя пользователя (минимум 3 символа)");
-      return false;
-    }
-    
-    if (!/^[a-zA-Z0-9_]{3,32}$/.test(username)) {
-      setError("Username может содержать только буквы, цифры и _ (3-32 символа)");
-      return false;
-    }
-    
     if (!code || code.length !== 6) {
       setError("Введите 6-значный код подтверждения");
       return false;
@@ -52,7 +42,7 @@ export default function TelegramAuthPage() {
       // Импортируем authAPI
       const { authAPI } = await import('../api');
       
-      // Проверяем код через auth-service
+      // Проверяем код через auth-service (код уже содержит информацию о пользователе)
       const response = await authAPI.verifyTelegramCode({ code });
       
       // Сохраняем токен и пользователя
@@ -100,10 +90,10 @@ export default function TelegramAuthPage() {
               <div className="flex-1 bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
                 <h3 className="text-blue-400 font-semibold mb-2">Инструкция:</h3>
                 <ol className="text-sm text-blue-300 space-y-1">
-                  <li>1. Откройте Telegram</li>
-                  <li>2. Найдите бота @RadiateAuth_bot</li>
-                  <li>3. Нажмите /start</li>
-                  <li>4. Выберите "Регистрация" или "Вход"</li>
+                  <li>1. Нажмите кнопку "Перейти к боту" ниже</li>
+                  <li>2. В Telegram нажмите /start</li>
+                  <li>3. Выберите "Регистрация" или "Вход"</li>
+                  <li>4. Следуйте инструкциям бота</li>
                   <li>5. Получите 6-значный код</li>
                   <li>6. Введите код ниже</li>
                 </ol>
@@ -149,24 +139,15 @@ export default function TelegramAuthPage() {
             {/* Form fields */}
             <div className="space-y-4">
               <div>
-                <label htmlFor="username" className="block text-xs font-semibold uppercase mb-2 text-muted">
-                  Имя пользователя
-                </label>
-                <input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  disabled={isLoading}
-                  className="form-input"
-                  placeholder="wind"
-                  autoComplete="username"
-                />
-              </div>
-              <div>
-                <label htmlFor="code" className="block text-xs font-semibold uppercase mb-2 text-muted">
-                  Код подтверждения
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label htmlFor="code" className="block text-xs font-semibold uppercase text-muted">
+                    Код подтверждения
+                  </label>
+                  <div className="flex items-center gap-1 text-xs text-muted">
+                    <Clock size={12} />
+                    <span>Действует 5 минут</span>
+                  </div>
+                </div>
                 <input
                   id="code"
                   type="text"
@@ -187,7 +168,7 @@ export default function TelegramAuthPage() {
             {/* Submit button */}
             <button
               type="submit"
-              disabled={isLoading || code.length !== 6 || username.length < 3}
+              disabled={isLoading || code.length !== 6}
               className="btn-primary w-full"
             >
               {isLoading ? (

@@ -1,0 +1,186 @@
+# Production LiveKit Configuration for Radiate Voice Service
+# Server: 5.35.83.143
+# Integrated with Redis, COTURN, and Voice Service
+
+# Basic server configuration
+port: 7880
+bind_addresses:
+  - 0.0.0.0
+
+# WebRTC configuration
+rtc:
+  tcp_port: 7881
+  udp_port: 7882
+  port_range_start: 50000
+  port_range_end: 60000
+  use_external_ip: true
+  external_ip: 5.35.83.143
+  
+  # ICE candidates configuration
+  ice_candidates:
+    - type: "host"
+      ip: "127.0.0.1"
+    - type: "srflx"
+      ip: "5.35.83.143"
+      related_address: "127.0.0.1"
+  
+  # STUN/TURN servers for client configuration
+  ice_servers:
+    # Public STUN servers
+    - urls: 
+      - "stun:stun.l.google.com:19302"
+      - "stun:stun1.l.google.com:19302"
+      - "stun:stun2.l.google.com:19302"
+    
+    # Local STUN server
+    - urls: "stun:5.35.83.143:3478"
+    
+    # TURN servers with authentication
+    - urls: 
+      - "turn:5.35.83.143:3478"
+      - "turn:5.35.83.143:3478?transport=tcp"
+      - "turns:5.35.83.143:5349"
+      username: "radiate_user"
+      credential: "radiate_secure_password_2024"
+
+# Redis integration (shared with main application)
+redis:
+  address: localhost:6379
+  password: radiate_redis_2024_secure
+  db: 1  # Use separate database for LiveKit
+  cluster_addresses: []
+  
+# Authentication keys
+keys:
+  devkey: secret
+  production_key: production_secret_2024
+
+# Room configuration optimized for voice chat
+room:
+  enable_recording: false
+  auto_create: true
+  empty_timeout: 300s  # 5 minutes
+  departure_timeout: 60s  # 1 minute after last participant
+  max_participants: 50
+  
+  # Default room settings
+  room_config:
+    max_participants: 50
+    empty_timeout: 300
+    departure_timeout: 60
+    enable_recording: false
+    
+  # Audio configuration for voice chat
+  audio:
+    active_speaker_update: 500ms
+    update_speaker_interval: 1s
+    # Opus configuration
+    opus:
+      bitrate: 64000  # 64kbps for good quality voice
+      complexity: 8
+      packet_loss_perc: 1
+      
+# Video configuration (disabled for voice-only)
+video:
+  enabled: false
+  codecs:
+    - h264
+  
+# Data channels for signaling
+data:
+  enabled: true
+  
+# TURN server configuration  
+turn:
+  enabled: true
+  domain: 5.35.83.143
+  tls_port: 5349
+  udp_port: 3478
+  tcp_port: 3478
+  external_tls: true
+  cert_file: "/etc/livekit/certs/radiate.crt"
+  key_file: "/etc/livekit/certs/radiate.key"
+  
+# Webhook integration with voice service
+webhook:
+  api_key: devkey
+  urls:
+    - http://127.0.0.1:14705/webhook/livekit
+  
+# Logging configuration
+log_level: info
+log_config:
+  level: info
+  sample_rate: 1
+  
+# Development vs Production
+development: false
+
+# Node configuration for clustering
+node:
+  ip: 5.35.83.143
+  port: 7880
+  region: "us-east-1"
+  
+# Health check configuration  
+health_check:
+  enabled: true
+  port: 7880
+  path: "/health"
+  
+# Metrics and monitoring
+prometheus:
+  enabled: true
+  port: 6789
+  bind_addresses:
+    - 127.0.0.1  # Only allow local access to metrics
+    
+# Recording configuration (disabled for voice chat)
+recording:
+  enabled: false
+  output_format: "mp4"
+  
+# Ingress configuration (disabled)
+ingress:
+  enabled: false
+  
+# Egress configuration (disabled for voice-only)
+egress:
+  enabled: false
+  
+# SIP configuration (disabled)
+sip:
+  enabled: false
+
+# Rate limiting
+rate_limit:
+  enabled: true
+  requests_per_second: 100
+  burst: 200
+  
+# Security settings
+security:
+  cors_allowed_origins:
+    - "http://localhost:5173"  # Tauri dev server
+    - "tauri://localhost"      # Tauri production
+    - "https://5.35.83.143"    # Production server
+  
+# Performance tuning
+performance:
+  num_workers: 0  # Auto-detect based on CPU cores
+  max_connections: 1000
+  
+# Advanced WebRTC settings
+webrtc:
+  congestion_control: "bbr"
+  enable_red: true
+  enable_dtx: true
+  enable_fec: false
+  playout_delay:
+    min: 40
+    max: 500
+  
+# Participant limits per room
+participant_limits:
+  max_per_room: 50
+  max_per_identity: 1

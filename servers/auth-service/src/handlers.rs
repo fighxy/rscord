@@ -440,6 +440,12 @@ pub async fn telegram_login(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .ok_or(StatusCode::UNAUTHORIZED)?;
     
+    // Now that we've verified everything, remove the code
+    state.auth_codes.write().await.remove(&body.code);
+    
+    // Clear rate limit on successful verification
+    state.rate_limiter.record_success(&rate_limit_key).await;
+    
     // Create JWT token
     let now = chrono::Utc::now();
     let exp = now + chrono::Duration::hours(24);
@@ -673,18 +679,31 @@ pub async fn telegram_verify_code(
     State(state): State<AuthState>,
     Json(body): Json<TelegramVerifyCodeRequest>,
 ) -> Result<Json<TelegramVerifyCodeResponse>, StatusCode> {
-    // Get and remove the code
+    // Validate code format
+    if body.code.len() != 6 || !body.code.chars().all(|c| c.is_numeric()) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+    
+    // Check rate limit for this code
+    let rate_limit_key = format!("verify_code:{}", &body.code);
+    if let Err(_) = state.rate_limiter.check_rate_limit(&rate_limit_key).await {
+        return Err(StatusCode::TOO_MANY_REQUESTS);
+    }
+    
+    // Get the code but don't remove it yet (in case of errors)
     let auth_code = {
-        let mut codes = state.auth_codes.write().await;
-        codes.remove(&body.code).ok_or(StatusCode::UNAUTHORIZED)?
+        let codes = state.auth_codes.read().await;
+        codes.get(&body.code).cloned().ok_or(StatusCode::UNAUTHORIZED)?
     };
     
     // Check if code is expired
     if chrono::Utc::now() > auth_code.expires_at {
+        // Remove expired code
+        state.auth_codes.write().await.remove(&body.code);
         return Err(StatusCode::UNAUTHORIZED);
     }
     
-    // Find user
+    // Find user by telegram_id and username stored in the code
     let users: Collection<UserDoc> = state.mongo.database("radiate").collection("users");
     let filter = doc! {
         "telegram_id": &auth_code.telegram_id,

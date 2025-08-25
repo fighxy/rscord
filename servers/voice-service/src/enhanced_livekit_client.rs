@@ -1,495 +1,388 @@
 use livekit_api::{
-    services::room::{CreateRoomRequest, DeleteRoomRequest, ListRoomsRequest, RoomServiceClient},
-    AccessToken, VideoGrant,
+    access_token::{AccessToken, VideoGrants},
+    services::room::{CreateRoomOptions, DeleteRoomRequest, ListRoomsRequest, RoomClient},
+    webhook::{WebhookEvent, WebhookReceiver},
 };
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tokio::sync::{Mutex, RwLock};
+use std::{collections::HashMap, sync::Arc, time::Duration};
+use thiserror::Error;
+use tokio::sync::RwLock;
 use tracing::{error, info, warn};
-use dashmap::DashMap;
 
-// Connection pool for LiveKit clients
-pub struct LiveKitConnectionPool {
-    clients: Arc<DashMap<String, Arc<RoomServiceClient>>>,
-    config: LiveKitConfig,
-    max_connections: usize,
-    current_connections: Arc<Mutex<usize>>,
+#[derive(Error, Debug)]
+pub enum LiveKitError {
+    #[error("LiveKit API error: {0}")]
+    Api(#[from] livekit_api::AccessTokenError),
+    #[error("Token generation error: {0}")]
+    Token(String),
+    #[error("Room creation failed: {0}")]
+    RoomCreation(String),
+    #[error("Room not found: {0}")]
+    RoomNotFound(String),
+    #[error("Invalid configuration: {0}")]
+    Config(String),
 }
 
-#[derive(Clone)]
-pub struct LiveKitConfig {
-    pub host: String,
+#[derive(Debug, Clone)]
+pub struct EnhancedLiveKitClient {
+    pub client: Arc<RoomClient>,
+    pub webhook_receiver: Arc<WebhookReceiver>,
     pub api_key: String,
     pub api_secret: String,
-    pub max_retries: u32,
-    pub retry_delay: Duration,
-    pub connection_timeout: Duration,
+    pub server_url: String,
+    pub room_cache: Arc<RwLock<HashMap<String, LiveKitRoomInfo>>>,
 }
 
-impl LiveKitConnectionPool {
-    pub fn new(config: LiveKitConfig, max_connections: usize) -> Self {
-        Self {
-            clients: Arc::new(DashMap::new()),
-            config,
-            max_connections,
-            current_connections: Arc::new(Mutex::new(0)),
-        }
-    }
-
-    pub async fn get_client(&self) -> Result<Arc<RoomServiceClient>, Box<dyn std::error::Error + Send + Sync>> {
-        let pool_id = format!("{}:{}", self.config.host, self.config.api_key);
-        
-        if let Some(client) = self.clients.get(&pool_id) {
-            return Ok(client.clone());
-        }
-
-        let mut current = self.current_connections.lock().await;
-        if *current >= self.max_connections {
-            // Wait for available connection or use existing
-            drop(current);
-            tokio::time::sleep(Duration::from_millis(100)).await;
-            return self.get_client().await;
-        }
-
-        let client = RoomServiceClient::new(&self.config.host, &self.config.api_key, &self.config.api_secret)?;
-        let client_arc = Arc::new(client);
-        
-        self.clients.insert(pool_id, client_arc.clone());
-        *current += 1;
-        
-        info!("Created new LiveKit client connection ({}/{})", *current, self.max_connections);
-        Ok(client_arc)
-    }
-
-    pub async fn health_check(&self) -> bool {
-        match self.get_client().await {
-            Ok(client) => {
-                // Try to list rooms as health check
-                match client.list_rooms(ListRoomsRequest::default()).await {
-                    Ok(_) => true,
-                    Err(e) => {
-                        warn!("LiveKit health check failed: {}", e);
-                        false
-                    }
-                }
-            }
-            Err(e) => {
-                error!("Failed to get LiveKit client for health check: {}", e);
-                false
-            }
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct EnhancedLiveKitClient {
-    pool: Arc<LiveKitConnectionPool>,
-    config: LiveKitConfig,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct VoiceRoomConfig {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LiveKitRoomInfo {
+    pub name: String,
+    pub sid: String,
+    pub num_participants: u32,
     pub max_participants: u32,
-    pub enable_recording: bool,
-    pub empty_timeout: Duration,
-    pub auto_record: bool,
-    // VAD Configuration
-    pub voice_activation: VoiceActivationConfig,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub empty_timeout: u32,
+    pub departure_timeout: u32,
+    pub is_active: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct VoiceActivationConfig {
-    pub enabled: bool,
-    pub threshold: f32,           // -60.0 to 0.0 dB
-    pub gate_threshold: f32,      // Noise gate threshold
-    pub attack_time: f32,         // Time to open gate (ms)
-    pub release_time: f32,        // Time to close gate (ms)
-    pub min_speech_duration: f32, // Minimum duration to consider speech (ms)
-}
-
-impl Default for VoiceActivationConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            threshold: -45.0,        // -45dB is good for normal speaking
-            gate_threshold: -60.0,   // Noise gate at -60dB
-            attack_time: 10.0,       // 10ms attack
-            release_time: 100.0,     // 100ms release
-            min_speech_duration: 150.0, // 150ms minimum speech
-        }
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VoiceRoomConfig {
+    pub max_participants: Option<u32>,
+    pub empty_timeout: Option<u32>,   // seconds to keep room open when empty
+    pub departure_timeout: Option<u32>, // seconds to keep room open after last participant leaves
+    pub audio_codecs: Vec<String>,
+    pub video_codecs: Vec<String>,
+    pub enable_audio: bool,
+    pub enable_video: bool,
+    pub enable_screen_share: bool,
 }
 
 impl Default for VoiceRoomConfig {
     fn default() -> Self {
         Self {
-            max_participants: 50,
-            enable_recording: false,
-            empty_timeout: Duration::from_secs(300),
-            auto_record: false,
-            voice_activation: VoiceActivationConfig::default(),
+            max_participants: Some(50),
+            empty_timeout: Some(300), // 5 minutes
+            departure_timeout: Some(60), // 1 minute
+            audio_codecs: vec!["audio/opus".to_string(), "audio/red".to_string()],
+            video_codecs: vec!["video/h264".to_string(), "video/vp8".to_string()],
+            enable_audio: true,
+            enable_video: false, // Voice only by default
+            enable_screen_share: true,
         }
     }
 }
 
-impl EnhancedLiveKitClient {
-    pub fn new(config: LiveKitConfig) -> Self {
-        let pool = Arc::new(LiveKitConnectionPool::new(config.clone(), 10)); // Max 10 connections
-        
-        Self {
-            pool,
-            config,
-        }
-    }
-
-    /// Create voice room with retry mechanism
-    pub async fn create_voice_room_with_retry(
-        &self,
-        room_name: &str,
-        config: VoiceRoomConfig,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let mut attempts = 0;
-        let max_retries = self.config.max_retries;
-
-        while attempts <= max_retries {
-            match self.create_voice_room(room_name, config.clone()).await {
-                Ok(result) => return Ok(result),
-                Err(e) => {
-                    attempts += 1;
-                    if attempts > max_retries {
-                        error!("Failed to create voice room after {} attempts: {}", max_retries, e);
-                        return Err(e);
-                    }
-                    
-                    warn!("Attempt {} failed, retrying in {:?}: {}", attempts, self.config.retry_delay, e);
-                    tokio::time::sleep(self.config.retry_delay).await;
-                }
-            }
-        }
-
-        Err("Max retries exceeded".into())
-    }
-
-    /// Create a new voice room in LiveKit with VAD configuration
-    pub async fn create_voice_room(
-        &self,
-        room_name: &str,
-        config: VoiceRoomConfig,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let client = self.pool.get_client().await?;
-
-        // Enhanced room metadata with VAD settings following LiveKit best practices
-        let metadata = serde_json::json!({
-            "type": "voice_chat",
-            "created_by": "radiate",
-            "auto_record": config.auto_record,
-            "empty_timeout_seconds": config.empty_timeout.as_secs(),
-            "voice_activation": {
-                "enabled": config.voice_activation.enabled,
-                "threshold": config.voice_activation.threshold,
-                "gate_threshold": config.voice_activation.gate_threshold,
-                "attack_time": config.voice_activation.attack_time,
-                "release_time": config.voice_activation.release_time,
-                "min_speech_duration": config.voice_activation.min_speech_duration
-            }
-        });
-
-        let request = CreateRoomRequest {
-            name: room_name.to_string(),
-            empty_timeout: config.empty_timeout.as_secs() as u32,
-            max_participants: config.max_participants,
-            metadata: metadata.to_string(),
-            ..Default::default()
-        };
-
-        match client.create_room(request).await {
-            Ok(room) => {
-                info!("Created LiveKit room with VAD: {} ({})", room.name, room.sid);
-                Ok(())
-            }
-            Err(e) => {
-                error!("Failed to create LiveKit room: {}", e);
-                Err(e.into())
-            }
-        }
-    }
-
-    /// Generate access token with VAD permissions
-    pub fn generate_access_token_with_vad(
-        &self,
-        room_name: &str,
-        user_id: &str,
-        username: &str,
-        permissions: VoicePermissions,
-        vad_config: &VoiceActivationConfig,
-    ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-        let video_grant = VideoGrant {
-            room_join: true,
-            room: room_name.to_string(),
-            can_publish: permissions.can_speak,
-            can_subscribe: true,
-            can_publish_data: permissions.can_send_data,
-            hidden: false,
-            recorder: permissions.is_recorder,
-            ..Default::default()
-        };
-
-        // Add VAD configuration to token metadata
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs();
-
-        let mut token = AccessToken::new(&self.config.api_key, &self.config.api_secret)
-            .with_identity(user_id)
-            .with_name(username)
-            .with_video_grant(video_grant)
-            .with_ttl(Duration::from_secs(3600)) // 1 hour
-            .with_metadata(&serde_json::json!({
-                "vad_enabled": vad_config.enabled,
-                "vad_threshold": vad_config.threshold,
-                "user_preferences": {
-                    "auto_mute_on_join": false,
-                    "voice_activation": vad_config.enabled
-                }
-            }).to_string());
-
-        match token.to_jwt() {
-            Ok(jwt) => Ok(jwt),
-            Err(e) => {
-                error!("Failed to generate access token: {}", e);
-                Err(e.into())
-            }
-        }
-    }
-
-    /// Enhanced room deletion with retry - disconnects all participants
-    pub async fn delete_voice_room_with_retry(
-        &self,
-        room_name: &str,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let mut attempts = 0;
-        let max_retries = self.config.max_retries;
-
-        while attempts <= max_retries {
-            match self.delete_voice_room(room_name).await {
-                Ok(result) => return Ok(result),
-                Err(e) => {
-                    attempts += 1;
-                    if attempts > max_retries {
-                        error!("Failed to delete voice room after {} attempts: {}", max_retries, e);
-                        return Err(e);
-                    }
-                    
-                    warn!("Delete attempt {} failed, retrying: {}", attempts, e);
-                    tokio::time::sleep(self.config.retry_delay).await;
-                }
-            }
-        }
-
-        Err("Max retries exceeded".into())
-    }
-
-    async fn delete_voice_room(
-        &self,
-        room_name: &str,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let client = self.pool.get_client().await?;
-        
-        let request = DeleteRoomRequest {
-            room: room_name.to_string(),
-        };
-
-        match client.delete_room(request).await {
-            Ok(_) => {
-                info!("Deleted LiveKit room: {}", room_name);
-                Ok(())
-            }
-            Err(e) => {
-                error!("Failed to delete LiveKit room: {}", e);
-                Err(e.into())
-            }
-        }
-    }
-
-    /// Health check with automatic recovery
-    pub async fn health_check_with_recovery(&self) -> bool {
-        if !self.pool.health_check().await {
-            warn!("LiveKit health check failed, attempting recovery...");
-            
-            // Clear connection pool to force reconnection
-            self.pool.clients.clear();
-            
-            // Wait a bit and try again
-            tokio::time::sleep(Duration::from_secs(2)).await;
-            
-            return self.pool.health_check().await;
-        }
-        
-        true
-    }
-
-    /// Get room participants with enhanced error handling
-    pub async fn get_room_participants(
-        &self,
-        room_name: &str,
-    ) -> Result<Vec<ParticipantInfo>, Box<dyn std::error::Error + Send + Sync>> {
-        use livekit_api::services::room::ListParticipantsRequest;
-
-        let client = self.pool.get_client().await?;
-        let request = ListParticipantsRequest {
-            room: room_name.to_string(),
-        };
-
-        match client.list_participants(request).await {
-            Ok(response) => {
-                let participants: Vec<ParticipantInfo> = response
-                    .participants
-                    .into_iter()
-                    .map(|p| ParticipantInfo {
-                        sid: p.sid,
-                        identity: p.identity,
-                        name: p.name,
-                        is_publisher: p.permission.unwrap_or_default().can_publish,
-                        joined_at: p.joined_at,
-                    })
-                    .collect();
-
-                Ok(participants)
-            }
-            Err(e) => {
-                error!("Failed to get room participants: {}", e);
-                Err(e.into())
-            }
-        }
-    }
-
-    /// Mute/unmute participant with enhanced error handling
-    pub async fn set_participant_mute(
-        &self,
-        room_name: &str,
-        participant_identity: &str,
-        muted: bool,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        use livekit_api::services::room::MuteRoomTrackRequest;
-
-        let client = self.pool.get_client().await?;
-        let request = MuteRoomTrackRequest {
-            room: room_name.to_string(),
-            identity: participant_identity.to_string(),
-            track_sid: String::new(),
-            muted,
-        };
-
-        match client.mute_published_track(request).await {
-            Ok(_) => {
-                info!(
-                    "Set participant {} mute status to {} in room {}",
-                    participant_identity, muted, room_name
-                );
-                Ok(())
-            }
-            Err(e) => {
-                error!("Failed to set participant mute status: {}", e);
-                Err(e.into())
-            }
-        }
-    }
-
-    /// Remove participant from room with enhanced error handling
-    pub async fn remove_participant(
-        &self,
-        room_name: &str,
-        participant_identity: &str,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        use livekit_api::services::room::RemoveParticipantRequest;
-
-        let client = self.pool.get_client().await?;
-        let request = RemoveParticipantRequest {
-            room: room_name.to_string(),
-            identity: participant_identity.to_string(),
-        };
-
-        match client.remove_participant(request).await {
-            Ok(_) => {
-                info!(
-                    "Removed participant {} from room {}",
-                    participant_identity, room_name
-                );
-                Ok(())
-            }
-            Err(e) => {
-                error!("Failed to remove participant: {}", e);
-                Err(e.into())
-            }
-        }
-    }
-
-    /// List all active rooms with enhanced filtering
-    pub async fn list_rooms(&self) -> Result<Vec<RoomInfo>, Box<dyn std::error::Error + Send + Sync>> {
-        let client = self.pool.get_client().await?;
-        let request = ListRoomsRequest::default();
-
-        match client.list_rooms(request).await {
-            Ok(response) => {
-                let rooms: Vec<RoomInfo> = response
-                    .rooms
-                    .into_iter()
-                    .map(|room| RoomInfo {
-                        name: room.name,
-                        sid: room.sid,
-                        num_participants: room.num_participants,
-                        creation_time: room.creation_time,
-                        metadata: room.metadata,
-                    })
-                    .collect();
-
-                Ok(rooms)
-            }
-            Err(e) => {
-                error!("Failed to list rooms: {}", e);
-                Err(e.into())
-            }
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
-pub struct RoomInfo {
-    pub name: String,
-    pub sid: String,
-    pub num_participants: u32,
-    pub creation_time: i64,
-    pub metadata: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ParticipantInfo {
-    pub sid: String,
-    pub identity: String,
-    pub name: String,
-    pub is_publisher: bool,
-    pub joined_at: i64,
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VoicePermissions {
-    pub can_speak: bool,
-    pub can_send_data: bool,
-    pub is_recorder: bool,
-    pub is_admin: bool,
-    pub voice_activation_override: bool, // Can override VAD settings
+    pub can_publish_audio: bool,
+    pub can_publish_video: bool,
+    pub can_publish_data: bool,
+    pub can_subscribe: bool,
+    pub can_update_own_metadata: bool,
+    pub admin: bool,
 }
 
 impl Default for VoicePermissions {
     fn default() -> Self {
         Self {
-            can_speak: true,
-            can_send_data: true,
-            is_recorder: false,
-            is_admin: false,
-            voice_activation_override: false,
+            can_publish_audio: true,
+            can_publish_video: false, // Voice only by default
+            can_publish_data: true,
+            can_subscribe: true,
+            can_update_own_metadata: true,
+            admin: false,
         }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParticipantInfo {
+    pub identity: String,
+    pub name: String,
+    pub sid: String,
+    pub joined_at: chrono::DateTime<chrono::Utc>,
+    pub is_publisher: bool,
+    pub audio_enabled: bool,
+    pub video_enabled: bool,
+    pub metadata: String,
+}
+
+impl EnhancedLiveKitClient {
+    pub fn new(
+        server_url: String,
+        api_key: String,
+        api_secret: String,
+    ) -> Result<Self, LiveKitError> {
+        // Validate configuration
+        if api_key.is_empty() || api_secret.is_empty() {
+            return Err(LiveKitError::Config("API key and secret are required".to_string()));
+        }
+
+        if server_url.is_empty() {
+            return Err(LiveKitError::Config("Server URL is required".to_string()));
+        }
+
+        let client = RoomClient::new(&server_url, &api_key, &api_secret)
+            .map_err(|e| LiveKitError::Api(e.into()))?;
+        
+        let webhook_receiver = WebhookReceiver::new(&api_key, &api_secret);
+
+        Ok(Self {
+            client: Arc::new(client),
+            webhook_receiver: Arc::new(webhook_receiver),
+            api_key,
+            api_secret,
+            server_url,
+            room_cache: Arc::new(RwLock::new(HashMap::new())),
+        })
+    }
+
+    /// Create a new voice room
+    pub async fn create_voice_room(
+        &self,
+        room_name: &str,
+        config: VoiceRoomConfig,
+    ) -> Result<LiveKitRoomInfo, LiveKitError> {
+        let options = CreateRoomOptions {
+            name: room_name.to_string(),
+            empty_timeout: config.empty_timeout,
+            departure_timeout: config.departure_timeout,
+            max_participants: config.max_participants,
+            node_id: None,
+            metadata: Some(serde_json::to_string(&config).unwrap_or_default()),
+        };
+
+        match self.client.create_room(room_name, options).await {
+            Ok(room) => {
+                let room_info = LiveKitRoomInfo {
+                    name: room.name.clone(),
+                    sid: room.sid.clone(),
+                    num_participants: room.num_participants,
+                    max_participants: room.max_participants,
+                    created_at: chrono::Utc::now(),
+                    updated_at: chrono::Utc::now(),
+                    empty_timeout: room.empty_timeout.unwrap_or(300),
+                    departure_timeout: room.departure_timeout.unwrap_or(60),
+                    is_active: true,
+                };
+
+                // Cache room info
+                self.room_cache.write().await.insert(room_name.to_string(), room_info.clone());
+                
+                info!("Created LiveKit room: {} (sid: {})", room_name, room.sid);
+                Ok(room_info)
+            },
+            Err(e) => {
+                // If room already exists, try to get info
+                if let Ok(rooms) = self.client.list_rooms(ListRoomsRequest { 
+                    names: vec![room_name.to_string()]
+                }).await {
+                    if let Some(room) = rooms.into_iter().next() {
+                        let room_info = LiveKitRoomInfo {
+                            name: room.name.clone(),
+                            sid: room.sid.clone(),
+                            num_participants: room.num_participants,
+                            max_participants: room.max_participants,
+                            created_at: chrono::DateTime::from_timestamp(room.creation_time as i64, 0).unwrap_or_else(chrono::Utc::now),
+                            updated_at: chrono::Utc::now(),
+                            empty_timeout: room.empty_timeout.unwrap_or(300),
+                            departure_timeout: room.departure_timeout.unwrap_or(60),
+                            is_active: room.num_participants > 0,
+                        };
+                        
+                        self.room_cache.write().await.insert(room_name.to_string(), room_info.clone());
+                        warn!("Room {} already exists, returning existing info", room_name);
+                        return Ok(room_info);
+                    }
+                }
+                
+                error!("Failed to create room {}: {:?}", room_name, e);
+                Err(LiveKitError::RoomCreation(format!("Failed to create room {}: {:?}", room_name, e)))
+            }
+        }
+    }
+
+    /// Generate access token for participant
+    pub fn generate_access_token(
+        &self,
+        room_name: &str,
+        identity: &str,
+        name: &str,
+        permissions: VoicePermissions,
+    ) -> Result<String, LiveKitError> {
+        let mut token = AccessToken::with_api_key(&self.api_key, &self.api_secret)
+            .with_identity(identity)
+            .with_name(name)
+            .with_ttl(Duration::from_hours(12)); // 12 hour token
+        
+        let grants = VideoGrants {
+            room: Some(room_name.to_string()),
+            room_join: Some(true),
+            can_publish: Some(permissions.can_publish_audio || permissions.can_publish_video),
+            can_subscribe: Some(permissions.can_subscribe),
+            can_publish_data: Some(permissions.can_publish_data),
+            can_update_own_metadata: Some(permissions.can_update_own_metadata),
+            admin: Some(permissions.admin),
+            ..Default::default()
+        };
+        
+        token.add_grant(&grants);
+        
+        token.to_jwt().map_err(|e| {
+            error!("Failed to generate access token for {}: {:?}", identity, e);
+            LiveKitError::Token(format!("Failed to generate token: {:?}", e))
+        })
+    }
+
+    /// Delete a room
+    pub async fn delete_room(&self, room_name: &str) -> Result<(), LiveKitError> {
+        let request = DeleteRoomRequest {
+            room: room_name.to_string(),
+        };
+
+        match self.client.delete_room(request).await {
+            Ok(_) => {
+                // Remove from cache
+                self.room_cache.write().await.remove(room_name);
+                info!("Deleted LiveKit room: {}", room_name);
+                Ok(())
+            },
+            Err(e) => {
+                warn!("Failed to delete room {} (might already be deleted): {:?}", room_name, e);
+                // Remove from cache anyway
+                self.room_cache.write().await.remove(room_name);
+                Ok(()) // Not a critical error
+            }
+        }
+    }
+
+    /// Get room information
+    pub async fn get_room_info(&self, room_name: &str) -> Result<Option<LiveKitRoomInfo>, LiveKitError> {
+        // Check cache first
+        if let Some(room) = self.room_cache.read().await.get(room_name) {
+            return Ok(Some(room.clone()));
+        }
+
+        // Query LiveKit server
+        match self.client.list_rooms(ListRoomsRequest {
+            names: vec![room_name.to_string()]
+        }).await {
+            Ok(rooms) => {
+                if let Some(room) = rooms.into_iter().next() {
+                    let room_info = LiveKitRoomInfo {
+                        name: room.name.clone(),
+                        sid: room.sid.clone(),
+                        num_participants: room.num_participants,
+                        max_participants: room.max_participants,
+                        created_at: chrono::DateTime::from_timestamp(room.creation_time as i64, 0).unwrap_or_else(chrono::Utc::now),
+                        updated_at: chrono::Utc::now(),
+                        empty_timeout: room.empty_timeout.unwrap_or(300),
+                        departure_timeout: room.departure_timeout.unwrap_or(60),
+                        is_active: room.num_participants > 0,
+                    };
+                    
+                    // Update cache
+                    self.room_cache.write().await.insert(room_name.to_string(), room_info.clone());
+                    Ok(Some(room_info))
+                } else {
+                    Ok(None)
+                }
+            },
+            Err(e) => {
+                error!("Failed to get room info for {}: {:?}", room_name, e);
+                Ok(None)
+            }
+        }
+    }
+
+    /// List all rooms
+    pub async fn list_rooms(&self) -> Result<Vec<LiveKitRoomInfo>, LiveKitError> {
+        match self.client.list_rooms(ListRoomsRequest { names: vec![] }).await {
+            Ok(rooms) => {
+                let mut room_infos = Vec::new();
+                for room in rooms {
+                    let room_info = LiveKitRoomInfo {
+                        name: room.name.clone(),
+                        sid: room.sid.clone(),
+                        num_participants: room.num_participants,
+                        max_participants: room.max_participants,
+                        created_at: chrono::DateTime::from_timestamp(room.creation_time as i64, 0).unwrap_or_else(chrono::Utc::now),
+                        updated_at: chrono::Utc::now(),
+                        empty_timeout: room.empty_timeout.unwrap_or(300),
+                        departure_timeout: room.departure_timeout.unwrap_or(60),
+                        is_active: room.num_participants > 0,
+                    };
+                    room_infos.push(room_info);
+                }
+                Ok(room_infos)
+            },
+            Err(e) => {
+                error!("Failed to list rooms: {:?}", e);
+                Err(LiveKitError::Api(e.into()))
+            }
+        }
+    }
+
+    /// Process webhook events
+    pub fn process_webhook(&self, body: &str, auth_header: &str) -> Result<Option<WebhookEvent>, LiveKitError> {
+        match self.webhook_receiver.verify(body, auth_header) {
+            Ok(event) => {
+                info!("Processed LiveKit webhook event: {:?}", event);
+                Ok(Some(event))
+            },
+            Err(e) => {
+                error!("Failed to verify webhook: {:?}", e);
+                Err(LiveKitError::Token(format!("Webhook verification failed: {:?}", e)))
+            }
+        }
+    }
+
+    /// Update room cache on participant events
+    pub async fn update_room_participants(&self, room_name: &str, participant_count: u32) {
+        if let Some(room) = self.room_cache.write().await.get_mut(room_name) {
+            room.num_participants = participant_count;
+            room.updated_at = chrono::Utc::now();
+            room.is_active = participant_count > 0;
+        }
+    }
+
+    /// Get server health status
+    pub async fn health_check(&self) -> bool {
+        match self.client.list_rooms(ListRoomsRequest { names: vec![] }).await {
+            Ok(_) => {
+                info!("LiveKit health check passed");
+                true
+            },
+            Err(e) => {
+                error!("LiveKit health check failed: {:?}", e);
+                false
+            }
+        }
+    }
+
+    /// Clean up inactive rooms
+    pub async fn cleanup_inactive_rooms(&self, max_age_hours: i64) -> Result<usize, LiveKitError> {
+        let cutoff_time = chrono::Utc::now() - chrono::Duration::hours(max_age_hours);
+        let mut cleaned_count = 0;
+
+        let rooms_to_check: Vec<String> = {
+            self.room_cache.read().await.keys().cloned().collect()
+        };
+
+        for room_name in rooms_to_check {
+            if let Some(room_info) = self.get_room_info(&room_name).await? {
+                if !room_info.is_active && room_info.updated_at < cutoff_time {
+                    if let Err(e) = self.delete_room(&room_name).await {
+                        warn!("Failed to cleanup room {}: {:?}", room_name, e);
+                    } else {
+                        cleaned_count += 1;
+                        info!("Cleaned up inactive room: {}", room_name);
+                    }
+                }
+            }
+        }
+
+        Ok(cleaned_count)
     }
 }

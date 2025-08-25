@@ -26,9 +26,20 @@ async fn main() {
         mongo: mongo.clone(),
         jwt_secret,
         auth_codes: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+        rate_limiter: radiate_auth_service::rate_limiter::RateLimiter::new(
+            5,  // max 5 attempts
+            5,  // within 5 minutes window
+            10  // 10 minutes lockout
+        ),
     };
 
     let app = create_app(state).await;
+
+    // Start background tasks
+    let cleanup_codes = state.auth_codes.clone();
+    tokio::spawn(async move {
+        radiate_auth_service::background_tasks::cleanup_expired_codes(cleanup_codes).await;
+    });
 
     info!("Auth service listening on {}", addr);
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

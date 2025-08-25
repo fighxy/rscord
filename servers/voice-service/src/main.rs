@@ -1,215 +1,141 @@
-mod types;
-mod livekit_client;
-mod room_manager;
-
-use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    response::Json,
-    routing::{get, post, delete},
-    Router,
-};
-use livekit_client::{LiveKitClient, VoiceRoomConfig};
-use mongodb::Client as MongoClient;
-use room_manager::VoiceRoomManager;
-use radiate_common::{load_config, AppConfig, EnhancedJwtValidator};
-use serde::{Deserialize, Serialize};
-use std::{net::SocketAddr, sync::Arc};
-use tower_http::cors::{Any, CorsLayer};
+use radiate_voice_service::{create_voice_router, start_background_tasks, VoiceServiceState};
+use std::net::SocketAddr;
+use tokio::signal;
 use tracing::{error, info};
-
-#[derive(Clone)]
-struct VoiceServiceState {
-    room_manager: Arc<VoiceRoomManager>,
-    livekit_client: Arc<LiveKitClient>,
-    config: AppConfig,
-    jwt_validator: Arc<EnhancedJwtValidator>,
-}
-
-#[derive(Debug, Deserialize)]
-struct CreateVoiceRoomRequest {
-    pub name: String,
-    pub guild_id: String,
-    pub channel_id: String,
-    pub max_participants: Option<u32>,
-    pub enable_recording: Option<bool>,
-}
-
-#[derive(Debug, Deserialize)]
-struct JoinVoiceRoomRequest {
-    pub user_id: String,
-    pub username: String,
-}
-
-#[derive(Debug, Serialize)]
-struct JoinVoiceRoomResponse {
-    pub access_token: String,
-    pub livekit_url: String,
-    pub room_name: String,
-    pub session_id: String,
-}
-
-#[derive(Debug, Serialize)]
-struct HealthResponse {
-    pub status: String,
-    pub version: String,
-}
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize tracing with better formatting
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "radiate_voice_service=info,tower_http=debug".into()),
+        )
+        .with(tracing_subscriber::fmt::layer().with_target(false))
         .init();
 
-    // Load configuration
-    let cfg: AppConfig = load_config("RADIATE").expect("Failed to load config");
-    let bind_address = std::env::var("BIND_ADDRESS").unwrap_or_else(|_| "0.0.0.0".to_string());
-    let voice_port = std::env::var("VOICE_PORT").unwrap_or_else(|_| "14705".to_string());
-    let addr: SocketAddr = format!("{}:{}", bind_address, voice_port)
+    info!("Starting Radiate Voice Service...");
+
+    // Load configuration from environment variables with fallbacks
+    let config = VoiceServiceConfig::from_env()?;
+    
+    info!("Configuration loaded:");
+    info!("  - Bind Address: {}", config.bind_address);
+    info!("  - Voice Port: {}", config.voice_port);
+    info!("  - Redis URL: {}", mask_redis_url(&config.redis_url));
+    info!("  - LiveKit URL: {}", config.livekit_url);
+
+    // Parse bind address
+    let addr: SocketAddr = format!("{}:{}", config.bind_address, config.voice_port)
         .parse()
-        .expect("Invalid bind address");
+        .expect("Failed to parse bind address");
 
-    // Initialize LiveKit client
-    let livekit_host = std::env::var("LIVEKIT_HOST").unwrap_or_else(|_| "http://localhost:7880".to_string());
-    let livekit_api_key = std::env::var("LIVEKIT_API_KEY").unwrap_or_else(|_| "APIKey".to_string());
-    let livekit_api_secret = std::env::var("LIVEKIT_API_SECRET").unwrap_or_else(|_| "APISecret".to_string());
+    // Initialize voice service state
+    info!("Initializing voice service state...");
+    let state = VoiceServiceState::new(
+        config.redis_url,
+        config.livekit_url,
+        config.livekit_api_key,
+        config.livekit_api_secret,
+    ).await?;
+
+    // Start background tasks
+    info!("Starting background tasks...");
+    start_background_tasks(state.clone()).await;
+
+    // Create router
+    let app = create_voice_router(state);
+
+    info!("Voice service listening on {}", addr);
+    info!("Health check available at: http://{}/health", addr);
+    info!("Metrics available at: http://{}/metrics", addr);
+    info!("WebSocket endpoint: ws://{}/ws/voice", addr);
+
+    // Start server with graceful shutdown
+    let listener = tokio::net::TcpListener::bind(addr).await?;
     
-    let livekit_client = Arc::new(
-        LiveKitClient::new(livekit_host.clone(), livekit_api_key, livekit_api_secret)
-            .expect("Failed to create LiveKit client")
-    );
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
 
-    // Initialize MongoDB
-    let mongo_uri = cfg.mongodb_uri.clone()
-        .unwrap_or_else(|| "mongodb://localhost:27017".to_string());
-    let mongo_client = MongoClient::with_uri_str(mongo_uri)
-        .await
-        .expect("Failed to connect to MongoDB");
+    info!("Voice service shut down gracefully");
+    Ok(())
+}
 
-    // Initialize JWT validator
-    let jwt_validator = Arc::new(EnhancedJwtValidator::new(
-        cfg.jwt_secret.clone().unwrap_or_else(|| "secret".to_string()),
-        cfg.jwt_issuer.clone(),
-        cfg.jwt_audience.clone(),
-    ));
+#[derive(Debug)]
+struct VoiceServiceConfig {
+    pub bind_address: String,
+    pub voice_port: String,
+    pub redis_url: String,
+    pub livekit_url: String,
+    pub livekit_api_key: String,
+    pub livekit_api_secret: String,
+}
 
-    // Initialize room manager
-    let room_manager = Arc::new(VoiceRoomManager::new(livekit_client.clone(), mongo_client));
+impl VoiceServiceConfig {
+    fn from_env() -> Result<Self, Box<dyn std::error::Error>> {
+        Ok(Self {
+            bind_address: std::env::var("BIND_ADDRESS")
+                .unwrap_or_else(|_| "0.0.0.0".to_string()),
+            voice_port: std::env::var("VOICE_PORT")
+                .unwrap_or_else(|_| "14705".to_string()),
+            redis_url: std::env::var("REDIS_URL")
+                .or_else(|_| std::env::var("REDIS_CONNECTION_STRING"))
+                .unwrap_or_else(|_| "redis://localhost:6379".to_string()),
+            livekit_url: std::env::var("LIVEKIT_URL")
+                .or_else(|_| std::env::var("LIVEKIT_SERVER_URL"))
+                .unwrap_or_else(|_| "http://localhost:7880".to_string()),
+            livekit_api_key: std::env::var("LIVEKIT_API_KEY")
+                .or_else(|_| std::env::var("LIVEKIT_KEY"))
+                .unwrap_or_else(|_| "devkey".to_string()),
+            livekit_api_secret: std::env::var("LIVEKIT_API_SECRET")
+                .or_else(|_| std::env::var("LIVEKIT_SECRET"))
+                .unwrap_or_else(|_| "secret".to_string()),
+        })
+    }
+}
 
-    let state = VoiceServiceState {
-        room_manager,
-        livekit_client,
-        config: cfg,
-        jwt_validator,
+fn mask_redis_url(url: &str) -> String {
+    if let Some(at_pos) = url.find('@') {
+        if let Some(protocol_end) = url.find("://") {
+            let protocol_part = &url[..protocol_end + 3];
+            let server_part = &url[at_pos..];
+            format!("{}***:***{}", protocol_part, server_part)
+        } else {
+            "***:***@***".to_string()
+        }
+    } else {
+        url.to_string()
+    }
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("Failed to install Ctrl+C handler");
     };
 
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
-
-    let app = Router::new()
-        .route("/health", get(health_check))
-        .route("/api/voice/rooms", post(create_voice_room))
-        .route("/api/voice/rooms/:room_id/join", post(join_voice_room))
-        .route("/api/voice/rooms/:room_id/leave", post(leave_voice_room))
-        .route("/api/voice/rooms/:room_id", delete(delete_voice_room))
-        .with_state(state)
-        .layer(cors);
-
-    info!("🚀 Voice service listening on {}", addr);
-    info!("🎛️ LiveKit server: {}", livekit_host);
-    
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
-}
-
-async fn health_check() -> Json<HealthResponse> {
-    Json(HealthResponse {
-        status: "healthy".to_string(),
-        version: "1.0.0".to_string(),
-    })
-}
-
-async fn create_voice_room(
-    State(state): State<VoiceServiceState>,
-    Json(request): Json<CreateVoiceRoomRequest>,
-) -> Result<Json<serde_json::Value>, StatusCode> {
-    if request.name.is_empty() || request.guild_id.is_empty() || request.channel_id.is_empty() {
-        return Err(StatusCode::BAD_REQUEST);
-    }
-
-    let config = VoiceRoomConfig {
-        max_participants: request.max_participants.unwrap_or(50),
-        enable_recording: request.enable_recording.unwrap_or(false),
-        ..Default::default()
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("Failed to install signal handler")
+            .recv()
+            .await;
     };
 
-    match state.room_manager.create_voice_room(
-        &request.guild_id,
-        &request.channel_id,
-        &request.name,
-        "system", // TODO: Extract from JWT
-        Some(config),
-    ).await {
-        Ok(room) => Ok(Json(serde_json::json!(room))),
-        Err(e) => {
-            error!("Failed to create voice room: {:?}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
-}
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
 
-async fn join_voice_room(
-    State(state): State<VoiceServiceState>,
-    Path(room_id): Path<String>,
-    Json(request): Json<JoinVoiceRoomRequest>,
-) -> Result<Json<JoinVoiceRoomResponse>, StatusCode> {
-    if request.user_id.is_empty() || request.username.is_empty() {
-        return Err(StatusCode::BAD_REQUEST);
+    tokio::select! {
+        _ = ctrl_c => {
+            info!("Received Ctrl+C signal");
+        },
+        _ = terminate => {
+            info!("Received terminate signal");
+        },
     }
 
-    match state.room_manager.join_voice_room(&room_id, &request.user_id, &request.username).await {
-        Ok(session) => {
-            let livekit_url = std::env::var("LIVEKIT_WS_URL")
-                .unwrap_or_else(|_| "ws://localhost:7880".to_string());
-
-            Ok(Json(JoinVoiceRoomResponse {
-                access_token: session.access_token,
-                livekit_url,
-                room_name: session.livekit_room_name,
-                session_id: session.id,
-            }))
-        }
-        Err(e) => {
-            error!("Failed to join voice room: {:?}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
-}
-
-async fn leave_voice_room(
-    State(state): State<VoiceServiceState>,
-    Path(room_id): Path<String>,
-    Json(request): Json<serde_json::Value>,
-) -> Result<StatusCode, StatusCode> {
-    let user_id = request.get("user_id")
-        .and_then(|v| v.as_str())
-        .ok_or(StatusCode::BAD_REQUEST)?;
-
-    match state.room_manager.leave_voice_room(&room_id, user_id).await {
-        Ok(_) => Ok(StatusCode::NO_CONTENT),
-        Err(e) => {
-            error!("Failed to leave voice room: {:?}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
-}
-
-async fn delete_voice_room(
-    State(_state): State<VoiceServiceState>,
-    Path(_room_id): Path<String>,
-) -> StatusCode {
-    // TODO: Implement room deletion
-    StatusCode::NO_CONTENT
+    info!("Starting graceful shutdown...");
 }

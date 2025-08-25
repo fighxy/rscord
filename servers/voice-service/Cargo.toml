@@ -1,30 +1,84 @@
 [package]
-name = "radiate-voice-service"
-version = "0.1.0"
+name = "voice-service"
+version = "2.0.0"
 edition = "2021"
 
 [dependencies]
-axum = { version = "0.7", features = ["macros", "ws"] }
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+
+# Web framework
+axum = { version = "0.7", features = ["ws", "macros"] }
+axum-extra = { version = "0.9", features = ["typed-header"] }
+tower = { version = "0.5", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "trace", "timeout", "limit"] }
+
+# WebRTC and LiveKit
+livekit-server-sdk = { version = "0.6", features = ["native-tls"] }
+livekit-api = { version = "0.3" }
+webrtc = "0.11"
+
+# Redis
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager", "cluster", "streams"] }
+deadpool-redis = "0.18"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# JWT and Security
+jsonwebtoken = "9.3"
+hmac = "0.12"
+sha2 = "0.10"
+argon2 = "0.5"
+uuid = { version = "1.10", features = ["v4", "serde"] }
+
+# HTTP Client
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+
+# Configuration
+config = "0.14"
+dotenvy = "0.15"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging and Metrics
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
-radiate-common = { path = "../crates/common" }
-radiate-events = { path = "../crates/events" }
-tower = { version = "0.5", features = ["timeout", "limit"] }
-tower-http = { version = "0.5", features = ["trace", "cors"] }
-futures-util = "0.3"
-anyhow = "1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+prometheus = { version = "0.13", features = ["process"] }
+metrics = "0.23"
+metrics-exporter-prometheus = "0.15"
+
+# Rate limiting and Circuit breaker
+governor = "0.6"
+backoff = { version = "0.4", features = ["tokio"] }
+
+# Database
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "postgres", "uuid", "chrono"] }
+
+# Time
 chrono = { version = "0.4", features = ["serde"] }
-ulid = { version = "1", features = ["serde"] }
-uuid = { version = "1.6", features = ["v4", "serde"] }
-dashmap = "5.5"
-webrtc = "0.9"
-tokio-tungstenite = "0.21"
-lapin = { version = "2", default-features = false, features = ["native-tls"] }
-livekit = "0.7.16"
-livekit-api = "0.4.5"
-mongodb = "3"
+
+# Async utilities
 futures = "0.3"
-bson = { version = "2", features = ["chrono-0_4"] }
+async-trait = "0.1"
+dashmap = "6.1"
+parking_lot = "0.12"
+
+# Health checks
+health_check = "2.0"
+
+[dev-dependencies]
+mockall = "0.13"
+wiremock = "0.6"
+test-log = "0.2"
+env_logger = "0.11"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
